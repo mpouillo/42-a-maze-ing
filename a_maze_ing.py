@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 
-from algo.generate_maze import generate_maze
-from maze_display import display_maze
+from src import DisplayMaze
 
 if __name__ == "__main__":
-    filename = generate_maze()
-    display_maze(filename)
+    visualizer = DisplayMaze("config.txt", "output_maze.txt")
+    visualizer.run_maze_display()
