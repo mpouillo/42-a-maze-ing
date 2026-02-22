@@ -1,6 +1,6 @@
 from PIL import Image, ImageDraw
 import numpy as np
-from algo.recursive_division import gen_maze, resolve_maze
+from algo.generation import MazeGenerator
 import os
 
 
@@ -89,8 +89,8 @@ def write_resolve(maze, filename):
 
 def generate_maze():
     filename = "output_maze.txt"
-    maze = gen_maze()
-    write_maze(maze, filename)
-    solve_maze = resolve_maze(maze)
+    maze = MazeGenerator()
+    write_maze(maze.generate(), filename)
+    solve_maze = maze.solve_deadends()
     write_resolve(solve_maze, filename)
     return filename
