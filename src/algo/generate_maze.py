@@ -1,66 +1,29 @@
-from PIL import Image, ImageDraw
 import numpy as np
 from src.algo.generation import MazeGenerator
-import os
+import sys
 
 
-def draw_maze(maze, cell_size=20):
-    height, width = maze.shape
-    img = Image.new("RGB", (width * cell_size, height * cell_size), "white")
-    draw = ImageDraw.Draw(img)
-
-    for r in range(height):
-        for c in range(width):
-            val = maze[r, c]
-            x1, y1 = c * cell_size, r * cell_size
-            x2, y2 = x1 + cell_size, y1 + cell_size
-
-            if val & (1 << 0):
-                draw.line([(x1, y1), (x2, y1)], fill="black", width=2)
-            if val & (1 << 1):
-                draw.line([(x2, y1), (x2, y2)], fill="black", width=2)
-            if val & (1 << 2):
-                draw.line([(x1, y2), (x2, y2)], fill="black", width=2)
-            if val & (1 << 3):
-                draw.line([(x1, y1), (x1, y2)], fill="black", width=2)
-
-    img.show()
-
-
-def create_grid(width, height):
-    maze = np.array([[0x0 for _ in range(width)] for _ in range(height)])
-    maze[0, :] |= (1 << 0)
-    maze[height - 1, :] |= (1 << 2)
-    maze[:, 0] |= (1 << 3)
-    maze[:, height - 1] |= (1 << 1)
-    return maze
-
-
-def cell_to_hex(cell):
+def cell_to_hex(cell: int) -> str:
     return format(cell & 0xF, "X")
 
 
-def write_maze(maze, filename):
+def write_maze(maze: np.ndarray, filename: str, entry, exit_) -> None:
     with open(filename, "w") as f:
         for row in maze:
             f.write("".join(cell_to_hex(c) for c in row) + "\n")
         f.write("\n")
-        f.write(str(ENTRY).strip("()"))
+        f.write(str(entry).strip("()"))
         f.write("\n")
-        f.write(str(EXIT).strip("()"))
+        f.write(str(exit_).strip("()"))
         f.write("\n")
 
 
-ENTRY = tuple(int(n) for n in os.environ.get("ENTRY").strip().split(','))
-EXIT = tuple(int(n) for n in os.environ.get("EXIT").strip().split(','))
-
-
-def write_resolve(maze, filename):
+def write_resolve(maze: np.ndarray, filename: str, entry, exit_) -> None:
     with open(filename, "a") as f:
-        row, col = ENTRY
+        row, col = entry
         prev = None
 
-        while (row, col) != EXIT:
+        while (row, col) != exit_:
 
             if not maze[row, col] & (1 << 0) and (row-1, col) != prev:
                 prev = (row, col)
@@ -87,9 +50,19 @@ def write_resolve(maze, filename):
                 continue
 
 
-def generate_maze(filename: str):
-    maze = MazeGenerator()
-    write_maze(maze.generate(), filename)
-    solve_maze = maze.solve_deadends()
-    write_resolve(solve_maze, filename)
-    return filename
+def generate_maze(filename: str) -> str:
+    try:
+        maze_gen = MazeGenerator()
+
+        entry = maze_gen.entry
+        exit_ = maze_gen.exit
+
+        maze = maze_gen.generate()
+        write_maze(maze, filename, entry, exit_)
+
+        solved = maze_gen.solve_deadends()
+        write_resolve(solved, filename, entry, exit_)
+        return filename
+
+    except (ValueError, IndexError) as e:
+        sys.exit(f"Configuration error: {e}")

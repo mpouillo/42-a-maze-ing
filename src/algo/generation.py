@@ -2,7 +2,6 @@ from random import randint, seed
 import numpy as np
 from dotenv import load_dotenv
 import os
-import sys
 from typing import Any, List, Tuple
 
 
@@ -22,24 +21,64 @@ class MazeGenerator:
         seed(self.seed)
 
     def load_config(self) -> None:
+
+        self.height = int(str(os.environ.get("HEIGHT")))
+        self.width = int(str(os.environ.get("WIDTH")))
+
+        if self.height <= 0 or self.width <= 0:
+            raise ValueError(
+                "HEIGHT and WIDTH must be positive"
+            )
+
+        if self.height < 7 or self.width < 9:
+            raise ValueError(
+                "Maze must be at least 7x9"
+            )
+
+        entry_str = str(os.environ.get("ENTRY")).strip().split(',')
+        if len(entry_str) != 2:
+            raise ValueError("ENTRY must be 'row,col'")
+        self.entry = (int(entry_str[0]), int(entry_str[1]))
+
+        exit_str = str(os.environ.get("EXIT")).strip().split(',')
+        if len(exit_str) != 2:
+            raise ValueError("EXIT must be 'row,col'")
+        self.exit = (int(exit_str[0]), int(exit_str[1]))
+
         try:
-            self.height = int(str(os.environ.get("HEIGHT")))
-            self.width = int(str(os.environ.get("WIDTH")))
+            seed = str(os.environ.get("SEED"))
+            self.seed = int(seed)
+        except Exception:
+            self.seed = None
 
-            entry_str = str(os.environ.get("ENTRY")).strip().split(',')
-            self.entry = (int(entry_str[0]), int(entry_str[1]))
+        erow, ecol = self.entry
+        xrow, xcol = self.exit
 
-            exit_str = str(os.environ.get("EXIT")).strip().split(',')
-            self.exit = (int(exit_str[0]), int(exit_str[1]))
+        if self.entry == self.exit:
+            raise ValueError(
+                "The ENTRY can't be at the same place as the EXIT"
+            )
+        if not (0 <= erow < self.height and 0 <= ecol < self.width):
+            raise ValueError(
+                f"ENTRY {self.entry} is outside maze bounds "
+            )
+        if not (0 <= xrow < self.height and 0 <= xcol < self.width):
+            raise ValueError(
+                f"EXIT {self.exit} is outside maze bounds "
+            )
 
-            try:
-                seed = str(os.environ.get("SEED"))
-                self.seed = int(seed)
-            except Exception:
-                self.seed = None
+        perfect: str = str(os.environ.get("PERFECT"))
+        if perfect == "False" or perfect == "0":
+            self.perfect: bool = False
+        elif perfect == "True" or perfect == "1":
+            self.perfect = True
+        else:
+            self.perfect = None
 
-        except (ValueError, IndexError) as e:
-            sys.exit(f"Configuration error: {e}")
+        if self.perfect is None:
+            raise ValueError(
+                "PERFECT is not a bool : True or False"
+            )
 
     def initialize_grids(self) -> None:
         """Reset maze and visited arrays"""
@@ -108,6 +147,11 @@ class MazeGenerator:
         self.initialize_grids()
         self.apply_logo()
 
+        if self.visited[self.entry]:
+            raise ValueError(f"ENTRY {self.entry} inside the logo area")
+        if self.visited[self.exit]:
+            raise ValueError(f"EXIT {self.exit} inside the logo area")
+
         self.visited[self.entry] = True
         stack: List[Tuple[int, int]] = [self.entry]
 
@@ -140,31 +184,41 @@ class MazeGenerator:
             count += 1
         return count
 
-    def close_deadend(self, row: int, col: int) -> None:
+    def close_deadend(self, row: int, col: int) -> Tuple:
         """Fill a deadend by adding a wall to the only open side"""
-        cell_val = self.maze[row, col]
-
+        next_cell = (row, col)
         # If TOP is open, close it (add TOP wall)
         # and add BOTTOM wall to the neighbor above
-        if not (cell_val & self.TOP):
-            self.maze[row, col] |= self.TOP
-            if row > 0:
-                self.maze[row - 1, col] |= self.BOTTOM
+        while (next_cell != self.entry and
+               next_cell != self.exit and
+               self.count_walls(next_cell[0], next_cell[1])) == 3:
 
-        elif not (cell_val & self.RIGHT):
-            self.maze[row, col] |= self.RIGHT
-            if col < self.width - 1:
-                self.maze[row, col + 1] |= self.LEFT
+            row, col = next_cell
+            cell_val = self.maze[row, col]
 
-        elif not (cell_val & self.BOTTOM):
-            self.maze[row, col] |= self.BOTTOM
-            if row < self.height - 1:
-                self.maze[row + 1, col] |= self.TOP
+            if not (cell_val & self.TOP):
+                self.maze[row, col] |= self.TOP
+                if row > 0:
+                    self.maze[row - 1, col] |= self.BOTTOM
+                    next_cell = (row - 1, col)
 
-        elif not (cell_val & self.LEFT):
-            self.maze[row, col] |= self.LEFT
-            if col > 0:
-                self.maze[row, col - 1] |= self.RIGHT
+            elif not (cell_val & self.RIGHT):
+                self.maze[row, col] |= self.RIGHT
+                if col < self.width - 1:
+                    self.maze[row, col + 1] |= self.LEFT
+                    next_cell = (row, col + 1)
+
+            elif not (cell_val & self.BOTTOM):
+                self.maze[row, col] |= self.BOTTOM
+                if row < self.height - 1:
+                    self.maze[row + 1, col] |= self.TOP
+                    next_cell = (row + 1, col)
+
+            elif not (cell_val & self.LEFT):
+                self.maze[row, col] |= self.LEFT
+                if col > 0:
+                    self.maze[row, col - 1] |= self.RIGHT
+                    next_cell = (row, col - 1)
 
     def solve_deadends(self) -> np.ndarray[Any, Any]:
         """
