@@ -34,13 +34,19 @@ class DrawMaze(Maze):
         self.VALID_PATH = self.MAZE_DICT.get("path")
         self.MAZE_DATA = self.MAZE_DICT.get("maze")
 
-        margin = 80
-        self.CANVAS_WIDTH = self.WINDOW_HEIGHT - margin
-        self.CANVAS_HEIGHT = self.WINDOW_HEIGHT - margin
+        top_margin = 400
+        bottom_margin = 100
+        self.ALLOWED_WIDTH = self.WINDOW_WIDTH - top_margin
+        self.ALLOWED_HEIGHT = self.WINDOW_HEIGHT - bottom_margin
 
-        max_w = (self.CANVAS_WIDTH - self.LINE_WEIGHT) // self.MAZE_WIDTH
-        max_h = (self.CANVAS_HEIGHT - self.LINE_WEIGHT) // self.MAZE_HEIGHT
+        max_w = (self.ALLOWED_WIDTH - self.LINE_WEIGHT) // self.MAZE_WIDTH
+        max_h = (self.ALLOWED_HEIGHT - self.LINE_WEIGHT) // self.MAZE_HEIGHT
         self.NODE_SIZE = min(max_w, max_h)
+
+        self.CANVAS_WIDTH = (self.MAZE_WIDTH * self.NODE_SIZE
+                             + self.LINE_WEIGHT)
+        self.CANVAS_HEIGHT = (self.MAZE_HEIGHT * self.NODE_SIZE
+                              + self.LINE_WEIGHT)
 
     def set_colors(self,
                    fortytwo: int = 0xFFF0000FF,
@@ -190,8 +196,12 @@ class DrawMaze(Maze):
                 canvas.pos_x, canvas.pos_y
             )
 
-    def add_layer(self, layer: Canvas, name: str):
-        self.layers.update({name: layer})
+    def add_layer(self, x, y, width, height, name: str):
+        new_layer = Canvas(
+            self.MLX, self.MLX_PTR, x, y, width, height
+        )
+        self.layers.update({name: new_layer})
+        return self.layers.get(name)
 
     def clear_layers(self):
         for canvas in self.layers.values():
@@ -199,23 +209,20 @@ class DrawMaze(Maze):
         self.MLX.mlx_destroy_window(self.MLX_PTR, self.WIN_PTR)
 
     def run_maze_display(self):
-        maze_canvas = Canvas(
-            self.MLX, self.MLX_PTR, self.CANVAS_WIDTH, self.CANVAS_HEIGHT,
+        maze_canvas = self.add_layer(
             (self.WINDOW_WIDTH - self.CANVAS_WIDTH) // 2,
-            (self.WINDOW_HEIGHT - self.CANVAS_HEIGHT) // 2
+            (self.WINDOW_HEIGHT - self.CANVAS_HEIGHT) // 2,
+            self.CANVAS_WIDTH, self.CANVAS_HEIGHT,
+            "maze"
         )
-        self.draw_maze_walls(maze_canvas)
+        path_canvas = self.add_layer(
+            (self.WINDOW_WIDTH - self.CANVAS_WIDTH) // 2,
+            (self.WINDOW_HEIGHT - self.CANVAS_HEIGHT) // 2,
+            self.CANVAS_WIDTH, self.CANVAS_HEIGHT,
+            "path"
+        )
 
-        path_canvas = Canvas(
-            self.MLX, self.MLX_PTR, self.CANVAS_WIDTH, self.CANVAS_HEIGHT,
-            (self.WINDOW_WIDTH - self.CANVAS_WIDTH) // 2,
-            (self.WINDOW_HEIGHT - self.CANVAS_HEIGHT) // 2
-        )
+        self.draw_maze_walls(maze_canvas)
         self.draw_entry_node(path_canvas)
         self.draw_exit_node(path_canvas)
         list(self.draw_valid_path(path_canvas))
-
-        self.add_layer(maze_canvas, "maze")
-        self.add_layer(path_canvas, "path")
-
-        self.draw_layers_to_window()
