@@ -21,7 +21,7 @@ def main() -> None:
         os._exit(1)
 
     generate_maze(maze_file)
-    Window(maze_file, config_file, 1400, 1400)
+    Window(maze_file, config_file, 1200, 1200)
 
 
 if __name__ == "__main__":

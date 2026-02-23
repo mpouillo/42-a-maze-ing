@@ -34,10 +34,14 @@ class DrawMaze(Maze):
         self.VALID_PATH = self.MAZE_DICT.get("path")
         self.MAZE_DATA = self.MAZE_DICT.get("maze")
 
-        top_margin = 400
-        bottom_margin = 100
-        self.ALLOWED_WIDTH = self.WINDOW_WIDTH - top_margin
-        self.ALLOWED_HEIGHT = self.WINDOW_HEIGHT - bottom_margin
+        self.t_margin = 180
+        self.b_margin = 20
+        self.l_margin = 20
+        self.r_margin = 20
+        self.ALLOWED_WIDTH = (self.WINDOW_WIDTH
+                              - (self.l_margin + self.r_margin))
+        self.ALLOWED_HEIGHT = (self.WINDOW_HEIGHT
+                               - (self.t_margin + self.b_margin))
 
         max_w = (self.ALLOWED_WIDTH - self.LINE_WEIGHT) // self.MAZE_WIDTH
         max_h = (self.ALLOWED_HEIGHT - self.LINE_WEIGHT) // self.MAZE_HEIGHT
@@ -187,42 +191,52 @@ class DrawMaze(Maze):
 
             yield
 
-    def draw_layers_to_window(self, canvas_list: list | None = None) -> None:
-        if canvas_list is None:
-            canvas_list = self.layers.values()
-        for canvas in canvas_list:
+    def draw_layers_to_window(self) -> None:
+        sorted_layers = sorted(
+            self.layers.values(),
+            key=lambda item: item.get("z_index")
+        )
+        for layer in sorted_layers:
+            canvas = layer.get("canvas")
             self.MLX.mlx_put_image_to_window(
                 self.MLX_PTR, self.WIN_PTR, canvas.ptr,
                 canvas.pos_x, canvas.pos_y
             )
 
-    def add_layer(self, x, y, width, height, name: str):
-        new_layer = Canvas(
-            self.MLX, self.MLX_PTR, x, y, width, height
+    def add_layer(self, x, y, z_index, width, height, name: str):
+        canvas = Canvas(
+            self.MLX, self.MLX_PTR, x, y, width, height, name
         )
-        self.layers.update({name: new_layer})
-        return self.layers.get(name)
+        self.layers.update({name: {"canvas": canvas, "z_index": z_index}})
+        return canvas
 
-    def clear_layers(self):
-        for canvas in self.layers.values():
-            canvas.destroy()
-        self.MLX.mlx_destroy_window(self.MLX_PTR, self.WIN_PTR)
+    def clear_layers(self, *names: str):
+        if names:
+            for name in names:
+                layer = self.layers.get(name)
+                if layer:
+                    layer.get("canvas").destroy()
+                    del self.layers[name]
+        else:
+            for layer_data in self.layers.values():
+                layer_data.get("canvas").destroy()
+            self.layers.clear()
 
     def run_maze_display(self):
+        x_pos = self.l_margin + (self.ALLOWED_WIDTH - self.CANVAS_WIDTH) // 2
+        y_pos = self.t_margin + (self.ALLOWED_HEIGHT - self.CANVAS_HEIGHT) // 2
         maze_canvas = self.add_layer(
-            (self.WINDOW_WIDTH - self.CANVAS_WIDTH) // 2,
-            (self.WINDOW_HEIGHT - self.CANVAS_HEIGHT) // 2,
-            self.CANVAS_WIDTH, self.CANVAS_HEIGHT,
-            "maze"
+            x_pos, y_pos, 0, self.CANVAS_WIDTH, self.CANVAS_HEIGHT, "maze"
         )
         path_canvas = self.add_layer(
-            (self.WINDOW_WIDTH - self.CANVAS_WIDTH) // 2,
-            (self.WINDOW_HEIGHT - self.CANVAS_HEIGHT) // 2,
-            self.CANVAS_WIDTH, self.CANVAS_HEIGHT,
-            "path"
+            x_pos, y_pos, 0, self.CANVAS_WIDTH, self.CANVAS_HEIGHT, "path"
         )
 
         self.draw_maze_walls(maze_canvas)
         self.draw_entry_node(path_canvas)
         self.draw_exit_node(path_canvas)
-        list(self.draw_valid_path(path_canvas))
+
+        self.path_gen = self.draw_valid_path(path_canvas)
+        self.last_path_update = 0
+        self.solving = False
+        self.update_interval = 0.5

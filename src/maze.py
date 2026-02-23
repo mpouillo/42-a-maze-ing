@@ -18,4 +18,4 @@ class Maze:
         try:
             self.LINE_WEIGHT = int(os.environ.get("LINE_WEIGHT"))
         except TypeError:
-            self.LINE_WEIGHT = 2
+            self.LINE_WEIGHT = 1

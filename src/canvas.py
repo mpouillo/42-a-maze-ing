@@ -4,13 +4,13 @@ from src.mlx import Mlx
 
 
 class Canvas:
-    def __init__(self, mlx: Mlx, mlx_ptr: Any,
-                 x: int, y: int,
-                 width: int, height: int):
+    def __init__(self, mlx: Mlx, mlx_ptr: Any, x: int, y: int,
+                 width: int, height: int, name: str) -> None:
         self.width = width
         self.height = height
         self.pos_x = x
         self.pos_y = y
+        self.name = name
 
         self.mlx = mlx
         self.mlx_ptr = mlx_ptr
@@ -21,6 +21,8 @@ class Canvas:
         )
         self.buffer = memoryview(self.addr)
         self.bytes_per_pixel = self.bpp // 8
+        self.buffer[:] = (bytes([0]) *
+                          (self.width * self.height * self.bytes_per_pixel))
 
         self.font_dict = self.parse_font()
         self.font_scale = 3
