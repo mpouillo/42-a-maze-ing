@@ -29,9 +29,10 @@ SYSTEM_DEPS =	flake8 \
 
 all:
 	@if [ ! -f "$(ENV_PYTHON)" ]; then \
-		$(MAKE) install; \
+		$(MAKE) --no-print-directory install; \
 	else \
-		$(MAKE) run; \
+		echo "Starting '$(NAME)'..."; \
+		$(MAKE) --no-print-directory run; \
 	fi
 
 install: install_mlx install_conda create_env

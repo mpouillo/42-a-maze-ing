@@ -10,30 +10,20 @@ def main() -> None:
     from src import Window, generate_maze
 
     if len(sys.argv) != 2:
-        print("Incorrect usage."
-              "Run with: 'python3 a_maze_ing.py [config_file]")
-        os._exit(1)
+        sys.exit("Incorrect usage. "
+                 "Run with: 'python3 a_maze_ing.py [config_file]")
+
     else:
         config_file = sys.argv[1]
 
     try:
         maze_file = str(os.environ.get("OUTPUT_FILE"))
     except ValueError:
-        print("Error while parsing config file: "
-              "Incorrect OUTPUT_FILE value")
-        os._exit(1)
+        sys.exit("Error while parsing config file: "
+                 "Incorrect 'OUTPUT_FILE' value")
 
     generate_maze(maze_file)
     Window(maze_file, config_file, 1200, 1200)
-
-
-def get_req_packages(file: str) -> list:
-    req = []
-    line = 1
-    with open(file) as f:
-        for line in f:
-            req.append(line.strip())
-    return req
 
 
 def check_dependencies(req_filename: str) -> bool:
@@ -42,8 +32,7 @@ def check_dependencies(req_filename: str) -> bool:
         with open(req_filename) as f:
             req_list = f.read().strip().split("\n")
     except FileNotFoundError:
-        print(f"Requirement file '{req_filename}' not found.")
-        os._exit(1)
+        sys.exit(f"Requirement file '{req_filename}' not found.")
     missing = []
     for package in req_list:
         try:
@@ -59,4 +48,7 @@ def check_dependencies(req_filename: str) -> bool:
 
 if __name__ == "__main__":
     if check_dependencies("requirements.txt") == True:
-        main()
+        try:
+            main()
+        except (SystemExit, KeyboardInterrupt):
+            pass

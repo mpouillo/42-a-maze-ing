@@ -1,4 +1,5 @@
 import os
+import sys
 from typing import Any
 from src.mlx import Mlx
 
@@ -31,8 +32,7 @@ class Canvas:
                                * self.font_scale)
             self.font_height = len(self.font_dict.get("a")) * self.font_scale
         except Exception:
-            print("Failed to parse font files")
-            os._exit(1)
+            sys.exit("Failed to parse font files")
 
     def parse_font(self):
         font_dict = {}
