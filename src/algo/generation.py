@@ -32,7 +32,12 @@ class MazeGenerator:
             exit_str = str(os.environ.get("EXIT")).strip().split(',')
             self.exit = (int(exit_str[0]), int(exit_str[1]))
 
-            self.seed = int(str(os.environ.get("SEED")))
+            try:
+                seed = str(os.environ.get("SEED"))
+                self.seed = int(seed)
+            except Exception:
+                self.seed = None
+
         except (ValueError, IndexError) as e:
             sys.exit(f"Configuration error: {e}")
 
@@ -44,7 +49,7 @@ class MazeGenerator:
 
     def apply_logo(self) -> None:
         """Mark logo area as visited so the maze generates around it"""
-        with open("algo/logo.txt", "r") as f:
+        with open("src/algo/logo.txt", "r") as f:
             logo = f.read()
 
         logo_rows = list(logo.strip().split('\n'))

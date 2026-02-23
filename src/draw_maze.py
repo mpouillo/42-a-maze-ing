@@ -1,22 +1,29 @@
 #!/usr/bin/env python3
 
-from mlx import Mlx
-from .maze import Maze, Canvas
 import sys
-import time
+from src.mlx import Mlx
+from src.canvas import Canvas
+from src.maze import Maze
+from typing import Any
 
 
-class DisplayMaze(Maze):
-    def __init__(self,
-                 config: str,
-                 maze_file: str) -> None:
+class DrawMaze(Maze):
+    def __init__(self, mlx: Mlx, mlx_ptr: Any, win_ptr: Any,
+                 window_width: int, window_height: int,
+                 config: str, maze_file: str) -> None:
         super().__init__(config)
-        self.mlx = Mlx()
-        self.MLX_PTR = self.mlx.mlx_init()
-        if not self.MLX_PTR:
-            sys.exit("Failed to initialize MLX")
 
-        # Get maze data from file
+        self.MLX = mlx
+        self.MLX_PTR = mlx_ptr
+        self.WIN_PTR = win_ptr
+        self.WINDOW_WIDTH = window_width
+        self.WINDOW_HEIGHT = window_height
+        self.layers = {}
+
+        self.set_maze_data(self.MLX, self.MLX_PTR, maze_file)
+        self.set_colors()
+
+    def set_maze_data(self, mlx: Mlx, mlx_ptr: Any, maze_file: str):
         try:
             self.MAZE_DICT = self.parse_maze(maze_file)
         except FileNotFoundError:
@@ -27,24 +34,27 @@ class DisplayMaze(Maze):
         self.VALID_PATH = self.MAZE_DICT.get("path")
         self.MAZE_DATA = self.MAZE_DICT.get("maze")
 
-        self.NODE_SIZE = (min(self.MAZE_WIDTH, self.MAZE_HEIGHT)
-                          // max(len(self.MAZE_DATA), len(self.MAZE_DATA[0])))
+        margin = 80
+        self.CANVAS_WIDTH = self.WINDOW_HEIGHT - margin
+        self.CANVAS_HEIGHT = self.WINDOW_HEIGHT - margin
 
-        self.WIN_PTR = self.mlx.mlx_new_window(
-            self.MLX_PTR,
-            self.WINDOW_WIDTH,
-            self.WINDOW_HEIGHT,
-            "A-Maze-ing Display"
-        )
+        max_w = (self.CANVAS_WIDTH - self.LINE_WEIGHT) // self.MAZE_WIDTH
+        max_h = (self.CANVAS_HEIGHT - self.LINE_WEIGHT) // self.MAZE_HEIGHT
+        self.NODE_SIZE = min(max_w, max_h)
 
-        self.layers = {}
-
-        self.keys_pressed = set()
-        self.last_action_time = 0
-        self.ACTION_INTERVAL = 0.1  # 100ms
-
-    def add_layer(self, layer: Canvas, name: str):
-        self.layers.update({name: layer})
+    def set_colors(self,
+                   fortytwo: int = 0xFFF0000FF,
+                   maze_entry: int = 0xFF00FF00,
+                   maze_exit: int = 0xFFFF0000,
+                   path_start: int = 0xFF00FF00,
+                   path_end: int = 0xFFFF0000,
+                   walls: int = 0xFFFFFFFF):
+        self.COLOR_42 = fortytwo
+        self.COLOR_ENTRY = maze_entry
+        self.COLOR_EXIT = maze_exit
+        self.COLOR_PATH_START = path_start
+        self.COLOR_PATH_END = path_end
+        self.COLOR_WALLS = walls
 
     @staticmethod
     def parse_maze(filename: str) -> dict:
@@ -81,13 +91,10 @@ class DisplayMaze(Maze):
         s = self.NODE_SIZE
         for y, row in enumerate(self.MAZE_DATA):
             for x, value in enumerate(row):
-                self.draw_maze_square_outline(
-                    canvas, x * s, y * s, value, color
-                )
+                self.draw_maze_cell(canvas, x * s, y * s, value, color)
 
-    def draw_maze_square_outline(self, canvas: Canvas,
-                                 start_x: int, start_y: int,
-                                 bit_value: int, color: int) -> None:
+    def draw_maze_cell(self, canvas: Canvas, start_x: int, start_y: int,
+                       bit_value: int, color: int) -> None:
         w = self.LINE_WEIGHT
         s = self.NODE_SIZE
 
@@ -100,26 +107,50 @@ class DisplayMaze(Maze):
         if bit_value & 8:   # Left
             canvas.fill_rect(start_x, start_y, w, s + w, color)
 
+        if bit_value == 0xF:    # 42 Logo
+            canvas.fill_rect(start_x + w, start_y + w,
+                             s - w, s - w, self.COLOR_42)
+
     def draw_entry_node(self, canvas: Canvas):
         s = self.NODE_SIZE
         w = self.LINE_WEIGHT
         canvas.fill_rect(self.ENTRY_POINT[1] * s + w,
                          self.ENTRY_POINT[0] * s + w,
-                         s - w, s - w, 0xFF00FF00)  # Green
+                         s - w, s - w, self.COLOR_ENTRY)
 
     def draw_exit_node(self, canvas: Canvas):
         s = self.NODE_SIZE
         w = self.LINE_WEIGHT
         canvas.fill_rect(self.EXIT_POINT[1] * s + w,
                          self.EXIT_POINT[0] * s + w,
-                         s - w, s - w, 0xFFFF0000)  # Red
+                         s - w, s - w, self.COLOR_EXIT)
+
+    def get_gradient_color(self, c1, c2, mix):
+        a1 = (c1 >> 24) & 0xFF
+        r1 = (c1 >> 16) & 0xFF
+        g1 = (c1 >> 8) & 0xFF
+        b1 = c1 & 0xFF
+        a2 = (c2 >> 24) & 0xFF
+        r2 = (c2 >> 16) & 0xFF
+        g2 = (c2 >> 8) & 0xFF
+        b2 = c2 & 0xFF
+        a = int(a1 + (a2 - a1) * mix)
+        r = int(r1 + (r2 - r1) * mix)
+        g = int(g1 + (g2 - g1) * mix)
+        b = int(b1 + (b2 - b1) * mix)
+        return (a << 24) | (r << 16) | (g << 8) | b
 
     def draw_valid_path(self, canvas: Canvas):
         s = self.NODE_SIZE
         w = self.LINE_WEIGHT
         y, x = self.ENTRY_POINT
+        total_steps = len(self.VALID_PATH)
 
-        for direction in self.VALID_PATH:
+        for i, direction in enumerate(self.VALID_PATH):
+            color = self.get_gradient_color(self.COLOR_PATH_START,
+                                            self.COLOR_PATH_END,
+                                            i / max(1, total_steps - 1))
+
             match direction:
                 case "N": y -= 1
                 case "S": y += 1
@@ -143,78 +174,48 @@ class DisplayMaze(Maze):
                     draw_x -= w
                     draw_w += w
 
-            canvas.fill_rect(draw_x, draw_y, draw_w, draw_h, 0xFF0000FF)
+            canvas.fill_rect(draw_x, draw_y, draw_w, draw_h, color)
 
             if (y, x) == self.EXIT_POINT:
                 self.draw_exit_node(canvas)
 
             yield
 
-    def update_window(self):
-        for canvas in self.layers.values():
-            self.mlx.mlx_put_image_to_window(
+    def draw_layers_to_window(self, canvas_list: list | None = None) -> None:
+        if canvas_list is None:
+            canvas_list = self.layers.values()
+        for canvas in canvas_list:
+            self.MLX.mlx_put_image_to_window(
                 self.MLX_PTR, self.WIN_PTR, canvas.ptr,
                 canvas.pos_x, canvas.pos_y
             )
 
-    def clear_window(self):
+    def add_layer(self, layer: Canvas, name: str):
+        self.layers.update({name: layer})
+
+    def clear_layers(self):
         for canvas in self.layers.values():
             canvas.destroy()
-        self.mlx.mlx_destroy_window(self.MLX_PTR, self.WIN_PTR)
-
-    def handle_keypress(self, keycode, param) -> None:
-        self.keys_pressed.add(keycode)
-
-    def handle_keyrelease(self, keycode, param) -> None:
-        if keycode in self.keys_pressed:
-            self.keys_pressed.remove(keycode)
-
-    def update(self, param):
-        current_time = time.time()
-        if 65307 in self.keys_pressed:    # Escape
-            self.clear_window()
-            self.mlx.mlx_release(self.MLX_PTR)
-        if 65363 in self.keys_pressed:    # Right Arrow
-            if current_time - self.last_action_time >= self.ACTION_INTERVAL:
-                try:
-                    next(self.path_gen)
-                    self.update_window()
-                    self.last_action_time = current_time
-                except (StopIteration, AttributeError):
-                    pass
+        self.MLX.mlx_destroy_window(self.MLX_PTR, self.WIN_PTR)
 
     def run_maze_display(self):
         maze_canvas = Canvas(
-            self.mlx, self.MLX_PTR, self.CANVAS_WIDTH, self.CANVAS_HEIGHT,
+            self.MLX, self.MLX_PTR, self.CANVAS_WIDTH, self.CANVAS_HEIGHT,
             (self.WINDOW_WIDTH - self.CANVAS_WIDTH) // 2,
             (self.WINDOW_HEIGHT - self.CANVAS_HEIGHT) // 2
         )
         self.draw_maze_walls(maze_canvas)
-        self.add_layer(maze_canvas, "maze")
 
         path_canvas = Canvas(
-            self.mlx, self.MLX_PTR, self.CANVAS_WIDTH, self.CANVAS_HEIGHT,
+            self.MLX, self.MLX_PTR, self.CANVAS_WIDTH, self.CANVAS_HEIGHT,
             (self.WINDOW_WIDTH - self.CANVAS_WIDTH) // 2,
             (self.WINDOW_HEIGHT - self.CANVAS_HEIGHT) // 2
         )
-        self.add_layer(path_canvas, "path")
-
         self.draw_entry_node(path_canvas)
         self.draw_exit_node(path_canvas)
-        self.path_gen = self.draw_valid_path(self.layers.get("path"))
+        list(self.draw_valid_path(path_canvas))
 
-        self.update_window()
+        self.add_layer(maze_canvas, "maze")
+        self.add_layer(path_canvas, "path")
 
-        self.mlx.mlx_string_put(
-            self.MLX_PTR, self.WIN_PTR, 4, 4, 0xFFFFFFFF,
-            "Right arrow: Solve | Escape: Close"
-        )
-        self.mlx.mlx_hook(self.WIN_PTR, 2, 1, self.handle_keypress, None)
-        self.mlx.mlx_hook(self.WIN_PTR, 3, 2, self.handle_keyrelease, None)
-        self.mlx.mlx_loop_hook(self.MLX_PTR, self.update, None)
-        self.mlx.mlx_loop(self.MLX_PTR)
-
-
-if __name__ == "__main__":
-    printer = DisplayMaze("config", "output_maze.txt")
-    printer.run_maze_display()
+        self.draw_layers_to_window()

@@ -1,6 +1,6 @@
 from PIL import Image, ImageDraw
 import numpy as np
-from algo.generation import MazeGenerator
+from src.algo.generation import MazeGenerator
 import os
 
 
@@ -87,8 +87,7 @@ def write_resolve(maze, filename):
                 continue
 
 
-def generate_maze():
-    filename = "output_maze.txt"
+def generate_maze(filename: str):
     maze = MazeGenerator()
     write_maze(maze.generate(), filename)
     solve_maze = maze.solve_deadends()
