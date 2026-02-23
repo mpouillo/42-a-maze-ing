@@ -9,10 +9,8 @@ SRC = src
 
 .ONESHELL:
 install:
-	wget https://cdn.intra.42.fr/document/document/45911/mlx-2.2-py3-ubuntu-any.whl
-	unzip -u mlx-2.2-py3-ubuntu-any.whl 
-	rm mlx-2.2-py3-ubuntu-any.whl
-	rm -rf mlx-2.2.dist-info
+	unzip -u mlx-2.2-py3-ubuntu-any.whl -d src
+	rm -rf src/mlx-2.2.dist-info
 
 run:
 	python3 $(NAME)
