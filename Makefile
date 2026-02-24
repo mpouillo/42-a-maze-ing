@@ -6,10 +6,17 @@ NAME = a_maze_ing.py
 SRC_DIR = src
 CONFIG_FILE = config.txt
 
-TMP_BASE := $(if $(TMPDIR),$(TMPDIR),/tmp)
-USER_NAME := $(shell whoami)
-CONDA_DIR := $(TMP_BASE)/$(USER_NAME)_miniconda
+IS_WSL := $(shell grep -qi microsoft /proc/version && echo yes || echo no)
+ifeq ($(IS_WSL),yes)
+	TMP_BASE := $(if $(TMPDIR),$(TMPDIR),/tmp)
+	USER_NAME := $(shell whoami)
+	CONDA_DIR := $(TMP_BASE)/$(USER_NAME)_miniconda
+else
+    CONDA_DIR := $(CURDIR)/miniconda
+endif
+
 CONDA_BIN = $(CONDA_DIR)/bin/conda
+CONDA_LINK = $(CURDIR)/miniconda
 ENV_NAME = conda_env
 PYTHON_VER = 3.10.12 # To check
 ENV_PYTHON = $(CONDA_DIR)/envs/$(ENV_NAME)/bin/python
@@ -75,8 +82,16 @@ create_env:
 	else \
 		echo "Environment '$(ENV_NAME)' already exists."; \
 	fi
+	@if [ "$(IS_WSL)" = "yes" ] && [ ! -L "$(CONDA_LINK)" ]; then \
+		echo "Linking $(CONDA_DIR) to $(CONDA_LINK)..."; \
+		ln -s $(CONDA_DIR) $(CONDA_LINK); \
+	fi
 
 remove_conda:
+	@if [ -L "$(CONDA_LINK)" ]; then \
+		echo "Removing symlink..."; \
+		rm "$(CONDA_LINK)"; \
+	fi
 	@if [ -d "$(CONDA_DIR)" ]; then \
 		echo "Removing conda directory..."; \
 		$(RM) -r $(CONDA_DIR); \
