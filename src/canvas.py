@@ -25,6 +25,7 @@ class Canvas:
         self.buffer[:] = (bytes([0]) *
                           (self.width * self.height * self.bytes_per_pixel))
 
+        self.fonts_dir = "src/fonts"
         self.font_dict = self.parse_font()
         self.font_scale = 3
         try:
@@ -36,7 +37,7 @@ class Canvas:
 
     def parse_font(self):
         font_dict = {}
-        files = [f for f in os.listdir("src/font")]
+        files = [f for f in os.listdir(self.fonts_dir)]
 
         for f in files:
             with open("src/font/" + f) as font_file:
@@ -76,7 +77,7 @@ class Canvas:
     def draw_text(self, start_x, start_y, text, color):
         char_offset = 0
         for character in text.lower():
-            if character in self.font_dict:
+            if str(ord(character)) in self.font_dict:
                 char_data = self.font_dict.get(character)
                 for y, row in enumerate(char_data):
                     y *= self.font_scale
