@@ -6,15 +6,9 @@ NAME = a_maze_ing.py
 SRC_DIR = src
 CONFIG_FILE = config.txt
 
-IS_WSL := $(shell grep -qi microsoft /proc/version && echo yes || echo no)
-ifeq ($(IS_WSL),yes)
-	TMP_BASE := $(if $(TMPDIR),$(TMPDIR),/tmp)
-	USER_NAME := $(shell whoami)
-	CONDA_DIR := $(TMP_BASE)/$(USER_NAME)_miniconda
-else
-    CONDA_DIR := $(CURDIR)/miniconda
-endif
-
+TMP_BASE := $(if $(TMPDIR),$(TMPDIR),/tmp)
+USER_NAME := $(shell whoami)
+CONDA_DIR := $(TMP_BASE)/$(USER_NAME)_miniconda
 CONDA_BIN = $(CONDA_DIR)/bin/conda
 CONDA_LINK = $(CURDIR)/miniconda
 ENV_NAME = conda_env
@@ -57,7 +51,6 @@ install_mlx:
 		echo "Mlx already installed in '$(MLX_DIR)'."; \
 	fi
 
-
 remove_mlx:
 	@if [ -d "$(MLX_DIR)" ]; then \
 		echo "Removing mlx directory..."; \
@@ -75,18 +68,6 @@ install_conda:
 		echo "Miniconda already installed in '$(CONDA_DIR)'."; \
 	fi
 
-create_env:
-	@if [ ! -d "$(CONDA_DIR)/envs/$(ENV_NAME)" ]; then \
-		echo "Creating Conda environment '$(ENV_NAME)'..."; \
-		$(CONDA_BIN) create -y -n $(ENV_NAME) python=$(PYTHON_VER) --override-channels -c conda-forge; \
-	else \
-		echo "Environment '$(ENV_NAME)' already exists."; \
-	fi
-	@if [ "$(IS_WSL)" = "yes" ] && [ ! -L "$(CONDA_LINK)" ]; then \
-		echo "Linking $(CONDA_DIR) to $(CONDA_LINK)..."; \
-		ln -s $(CONDA_DIR) $(CONDA_LINK); \
-	fi
-
 remove_conda:
 	@if [ -L "$(CONDA_LINK)" ]; then \
 		echo "Removing symlink..."; \
@@ -95,6 +76,18 @@ remove_conda:
 	@if [ -d "$(CONDA_DIR)" ]; then \
 		echo "Removing conda directory..."; \
 		$(RM) -r $(CONDA_DIR); \
+	fi
+
+create_env:
+	@if [ ! -d "$(CONDA_DIR)/envs/$(ENV_NAME)" ]; then \
+		echo "Creating Conda environment '$(ENV_NAME)'..."; \
+		$(CONDA_BIN) create -y -n $(ENV_NAME) python=$(PYTHON_VER) --override-channels -c conda-forge; \
+	else \
+		echo "Environment '$(ENV_NAME)' already exists."; \
+	fi
+	@if [ ! -L "$(CONDA_LINK)" ]; then \
+		echo "Linking $(CONDA_DIR) to $(CONDA_LINK)..."; \
+		ln -s $(CONDA_DIR) $(CONDA_LINK); \
 	fi
 
 run:
@@ -108,7 +101,7 @@ run:
 debug:
 	@echo "TODO"
 
-lint:
+lint: remove_mlx
 	@if [ -f "$(ENV_PYTHON)" ]; then \
 		echo "Running flake8..."; \
 		$(ENV_PYTHON) -m flake8 .; \
@@ -119,7 +112,7 @@ lint:
 		exit 1; \
 	fi
 
-lint-strict:
+lint-strict: remove_mlx
 	@if [ -f "$(ENV_PYTHON)" ]; then \
 		echo "Running flake8..."; \
 		$(ENV_PYTHON) -m flake8 .; \
