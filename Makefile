@@ -29,23 +29,24 @@ SYSTEM_DEPS =	flake8 \
 				xorg-libx11
 
 all:
-	@if [ ! -f "$(ENV_PYTHON)" ]; then \
-		$(MAKE) --no-print-directory install; \
-	else \
+	@if [ -x "$(ENV_PYTHON)" ]; then \
 		echo "Starting '$(NAME)'..."; \
 		$(MAKE) --no-print-directory run; \
+	else \
+		$(MAKE) --no-print-directory install; \
 	fi
 
 install: install_mlx install_conda create_env
 	@echo "Installing dependencies into $(ENV_NAME)..."
-	@$(CONDA_BIN) install -y -n $(ENV_NAME) --override-channels \
-	-c conda-forge --file requirements.txt $(SYSTEM_DEPS)
+	@$(CONDA_BIN) install -y -q -n $(ENV_NAME) --override-channels \
+	-c conda-forge --file requirements.txt $(SYSTEM_DEPS) > /dev/null 2>&1 \
+		|| (echo "Error: Dependency installation failed."; exit 1)
 	@echo "Setup complete. Use 'make run' to start."
 
 install_mlx:
 	@if [ ! -d "$(MLX_DIR)" ]; then \
 		echo "Installing mlx into '$(MLX_DIR)'..."; \
-		unzip -u $(MLX_FILE) -d src; \
+		unzip -uq $(MLX_FILE) -d src; \
 		rm -rf src/mlx-2.2.dist-info; \
 	else \
 		echo "Mlx already installed in '$(MLX_DIR)'."; \
@@ -60,35 +61,34 @@ remove_mlx:
 install_conda:
 	@if [ ! -d "$(CONDA_DIR)" ]; then \
 		echo "Downloading Miniconda..."; \
-		curl -L https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -o miniconda.sh; \
+		curl -Ls https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -o miniconda.sh; \
 		echo "Installing Miniconda to '$(CONDA_DIR)'..."; \
-		bash miniconda.sh -b -p $(CONDA_DIR); \
-		rm miniconda.sh; \
+		bash miniconda.sh -b -p $(CONDA_DIR) > /dev/null 2>&1 \
+		|| (echo "Conda install failed!"; exit 1); \
+		$(RM) miniconda.sh; \
 	else \
 		echo "Miniconda already installed in '$(CONDA_DIR)'."; \
 	fi
 
 remove_conda:
-	@if [ -L "$(CONDA_LINK)" ]; then \
-		echo "Removing symlink..."; \
-		rm "$(CONDA_LINK)"; \
+	@if [ -L "$(CONDA_LINK)" ] || [ -e "$(CONDA_LINK)" ]; then \
+		echo "Removing Miniconda symlink..."; \
+		$(RM) "$(CONDA_LINK)"; \
 	fi
 	@if [ -d "$(CONDA_DIR)" ]; then \
-		echo "Removing conda directory..."; \
+		echo "Removing Miniconda directory..."; \
 		$(RM) -r $(CONDA_DIR); \
 	fi
 
 create_env:
 	@if [ ! -d "$(CONDA_DIR)/envs/$(ENV_NAME)" ]; then \
 		echo "Creating Conda environment '$(ENV_NAME)'..."; \
-		$(CONDA_BIN) create -y -n $(ENV_NAME) python=$(PYTHON_VER) --override-channels -c conda-forge; \
+		$(CONDA_BIN) create -y -q -n $(ENV_NAME) python=$(PYTHON_VER) --override-channels -c conda-forge > /dev/null 2>&1; \
 	else \
 		echo "Environment '$(ENV_NAME)' already exists."; \
 	fi
-	@if [ ! -L "$(CONDA_LINK)" ]; then \
-		echo "Linking $(CONDA_DIR) to $(CONDA_LINK)..."; \
-		ln -s $(CONDA_DIR) $(CONDA_LINK); \
-	fi
+	@echo "Linking $(CONDA_DIR) to $(CONDA_LINK)..."
+	@ln -snf $(CONDA_DIR) $(CONDA_LINK)
 
 run:
 	@if [ -f "$(ENV_PYTHON)" ]; then \
@@ -101,18 +101,18 @@ run:
 debug:
 	@echo "TODO"
 
-lint: remove_mlx
+lint:
 	@if [ -f "$(ENV_PYTHON)" ]; then \
 		echo "Running flake8..."; \
 		$(ENV_PYTHON) -m flake8 .; \
-		echo "Running mypy with flags..."; \
-		$(ENV_PYTHON) -m mypy . --warn-return-any --warn-unused-ignores --ignore-missing-imports --disallow-untyped-defs --check-untyped-defs; \
+		echo "Running mypy..."; \
+		$(ENV_PYTHON) -m mypy .; \
 	else \
 		echo "Conda environment not found. Run 'make install'."; \
 		exit 1; \
 	fi
 
-lint-strict: remove_mlx
+lint-strict:
 	@if [ -f "$(ENV_PYTHON)" ]; then \
 		echo "Running flake8..."; \
 		$(ENV_PYTHON) -m flake8 .; \

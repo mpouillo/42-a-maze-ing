@@ -1,0 +1,2 @@
+[flake8]
+exclude = src/mlx, .git, __pycache__, miniconda
