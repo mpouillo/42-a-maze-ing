@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 import os
 import sys
 from dotenv import load_dotenv
@@ -20,10 +18,14 @@ class DrawMaze:
         self.WINDOW_WIDTH = window_width
         self.WINDOW_HEIGHT = window_height
         self.layers = {}
+        self.maze_file = maze_file
 
-        self.set_maze_data(self.MLX, self.MLX_PTR, maze_file)
+        self.update_maze_data(maze_file)
         self.set_colors()
-        self.update_interval = 0.5
+        self.update_interval = 0.2
+        self.last_path_update = 0
+        self.path_step = 0
+        self.solving = False
 
     def load_config(self, config_file: str) -> None:
         load_dotenv(config_file)
@@ -39,7 +41,7 @@ class DrawMaze:
         except TypeError:
             self.LINE_WEIGHT = 2
 
-    def set_maze_data(self, mlx: Mlx, mlx_ptr: Any, maze_file: str):
+    def update_maze_data(self, maze_file: str):
         try:
             self.MAZE_DICT = self.parse_maze(maze_file)
         except FileNotFoundError:
@@ -169,42 +171,53 @@ class DrawMaze:
     def draw_valid_path(self, canvas: Canvas):
         s = self.NODE_SIZE
         w = self.LINE_WEIGHT
-        y, x = self.ENTRY_POINT
+        y_start, x_start = self.ENTRY_POINT
         total_steps = len(self.VALID_PATH)
 
-        for i, direction in enumerate(self.VALID_PATH):
-            color = self.get_gradient_color(self.COLOR_PATH_START,
-                                            self.COLOR_PATH_END,
-                                            i / max(1, total_steps - 1))
+        if not hasattr(self, 'path_step'):
+            self.path_step = 0
 
-            match direction:
-                case "N": y -= 1
-                case "S": y += 1
-                case "W": x -= 1
-                case "E": x += 1
+        while self.path_step < total_steps:
+            curr_y, curr_x = y_start, x_start
 
-            draw_x = x * s + w  # x position of rectangle
-            draw_y = y * s + w  # y position of rectangle
-            draw_w = s - w      # width of rectangle
-            draw_h = s - w      # height of rectangle
+            for i in range(self.path_step + 1):
+                direction = self.VALID_PATH[i]
+                color = self.get_gradient_color(
+                    self.COLOR_PATH_START,
+                    self.COLOR_PATH_END,
+                    i / max(1, total_steps - 1)
+                )
 
-            match direction:
-                case "N":
-                    draw_h += w
-                case "S":
-                    draw_y -= w
-                    draw_h += w
-                case "W":
-                    draw_w += w
-                case "E":
-                    draw_x -= w
-                    draw_w += w
+                match direction:
+                    case "N": curr_y -= 1
+                    case "S": curr_y += 1
+                    case "W": curr_x -= 1
+                    case "E": curr_x += 1
+
+                draw_x = curr_x * s + w  # x position of rectangle
+                draw_y = curr_y * s + w  # y position of rectangle
+                draw_w = s - w      # width of rectangle
+                draw_h = s - w      # height of rectangle
+
+                match direction:
+                    case "N":
+                        draw_h += w
+                    case "S":
+                        draw_y -= w
+                        draw_h += w
+                    case "W":
+                        draw_w += w
+                    case "E":
+                        draw_x -= w
+                        draw_w += w
 
             canvas.fill_rect(draw_x, draw_y, draw_w, draw_h, color)
 
-            if (y, x) == self.EXIT_POINT:
+            if (curr_y, curr_x) == self.EXIT_POINT:
                 self.draw_exit_node(canvas)
+                return
 
+            self.path_step += 1
             yield
 
     def draw_layers_to_window(self) -> None:
@@ -238,20 +251,42 @@ class DrawMaze:
                 layer_data.get("canvas").destroy()
             self.layers.clear()
 
-    def run_maze_display(self):
+    def init_path_layer(self, path_step: int = 0) -> Canvas:
+        self.clear_layers("path")
+        x_pos = self.l_margin + (self.ALLOWED_WIDTH - self.CANVAS_WIDTH) // 2
+        y_pos = self.t_margin + (self.ALLOWED_HEIGHT - self.CANVAS_HEIGHT) // 2
+        path_canvas = self.add_layer(
+            x_pos, y_pos, 1, self.CANVAS_WIDTH, self.CANVAS_HEIGHT, "path"
+        )
+
+        self.draw_entry_node(path_canvas)
+        self.draw_exit_node(path_canvas)
+
+        self.path_step = 0
+        self.path_gen = self.draw_valid_path(path_canvas)
+
+        for _ in range(path_step):
+            try:
+                next(self.path_gen)
+            except StopIteration:
+                break
+
+        return path_canvas
+
+    def init_maze_layer(self):
+        self.clear_layers("maze")
         x_pos = self.l_margin + (self.ALLOWED_WIDTH - self.CANVAS_WIDTH) // 2
         y_pos = self.t_margin + (self.ALLOWED_HEIGHT - self.CANVAS_HEIGHT) // 2
         maze_canvas = self.add_layer(
             x_pos, y_pos, 0, self.CANVAS_WIDTH, self.CANVAS_HEIGHT, "maze"
         )
-        path_canvas = self.add_layer(
-            x_pos, y_pos, 0, self.CANVAS_WIDTH, self.CANVAS_HEIGHT, "path"
-        )
-
         self.draw_maze_walls(maze_canvas, self.COLOR_WALLS)
-        self.draw_entry_node(path_canvas)
-        self.draw_exit_node(path_canvas)
+        return maze_canvas
 
-        self.path_gen = self.draw_valid_path(path_canvas)
-        self.last_path_update = 0
-        self.solving = False
+    def rebuild_maze(self):
+        current_step = getattr(self, "path_step", 0)
+        was_solving = self.solving
+        self.update_maze_data(self.maze_file)
+        self.init_maze_layer()
+        self.init_path_layer(current_step)
+        self.solving = was_solving
