@@ -22,6 +22,7 @@ class DrawMaze(Maze):
 
         self.set_maze_data(self.MLX, self.MLX_PTR, maze_file)
         self.set_colors()
+        self.update_interval = 0.5
 
     def set_maze_data(self, mlx: Mlx, mlx_ptr: Any, maze_file: str):
         try:
@@ -232,11 +233,10 @@ class DrawMaze(Maze):
             x_pos, y_pos, 0, self.CANVAS_WIDTH, self.CANVAS_HEIGHT, "path"
         )
 
-        self.draw_maze_walls(maze_canvas)
+        self.draw_maze_walls(maze_canvas, self.COLOR_WALLS)
         self.draw_entry_node(path_canvas)
         self.draw_exit_node(path_canvas)
 
         self.path_gen = self.draw_valid_path(path_canvas)
         self.last_path_update = 0
         self.solving = False
-        self.update_interval = 0.5

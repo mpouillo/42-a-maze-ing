@@ -1,6 +1,8 @@
 from src.mlx import Mlx
 from src.algo import generate_maze
+from functools import partial
 import os
+import random
 import time
 
 
@@ -37,14 +39,23 @@ class Window:
         self.b1_height = 60
         self.b2_width = self.b1_width
         self.b2_height = self.b1_height
-        self.b1_color = 0xFFFF0000
-        self.b2_color = 0xFF00FF00
-        self.create_button("reset", (width - self.b1_width) // 2, 20,
+        self.b1_color = 0xFFFF007F
+        self.b2_color = 0xFF00FF7F
+        self.create_button("reset_maze", (width - self.b1_width) // 2, 20,
                            self.b1_width, self.b1_height, self.b1_color,
                            "Regenerate Maze", 0xFFFFFFFF)
-        self.create_button("solve", (width - self.b1_width) // 2, 100,
+        self.create_button("solve_maze", (width - self.b1_width) // 2, 100,
                            self.b2_width, self.b2_height, self.b2_color,
                            "Solve Maze", 0xFFFFFFFF)
+        self.create_button("walls_bigger", 20, 20,
+                           self.b2_width, self.b2_height, 0xFF007FFF,
+                           "Bigger walls", 0xFFFFFFFF)
+        self.create_button("walls_smaller", 20, 100,
+                           self.b2_width, self.b2_height, 0xFF007FFF,
+                           "Smaller walls", 0xFFFFFFFF)
+        self.create_button("maze_colors", width - self.b2_width - 20, 20,
+                           self.b2_width, self.b2_height, 0xFF007FFF,
+                           "Random colors", 0xFFFFFFFF)
 
         # Update Hook
         self.mlx.mlx_hook(self.win_ptr, 2, 1, self.handle_keypress, None)
@@ -68,41 +79,88 @@ class Window:
         if keycode in self.keys_pressed:
             self.keys_pressed.remove(keycode)
 
+    def _cmd_reset_maze(self):
+        generate_maze(self.maze_file)
+        self.display.clear_layers("path", "maze", "faster", "slower")
+        self.display.set_maze_data(self.mlx, self.mlx_ptr, self.maze_file)
+        self.mlx.mlx_clear_window(self.mlx_ptr, self.win_ptr)
+        self.display.run_maze_display()
+
+    def _cmd_solve_maze(self):
+        path_canvas = self.display.layers.get("path")["canvas"]
+        self.path_gen = self.display.draw_valid_path(path_canvas)
+        self.display.solving = True
+        if "solve_faster" not in self.display.layers.keys():
+            self.create_button(
+                "solve_faster", (self.width - self.b1_width)
+                // 2 + self.b1_width + 20, 100, self.b2_width, self.b2_height,
+                0xFFFF7F7F, "Faster!!", 0xFFFFFFFF
+            )
+        if "solve_slower" not in self.display.layers.keys():
+            self.create_button(
+                "solve_slower", (self.width - self.b1_width)
+                // 2 - self.b1_width - 20, 100, self.b2_width, self.b2_height,
+                0xFF7F7FFF, "Slower!!", 0xFFFFFFFF
+            )
+
+    def _cmd_resize_walls(self, delta) -> None:
+        if delta > 0:
+            self.display.LINE_WEIGHT = min(
+                self.display.NODE_SIZE // 2,
+                self.display.LINE_WEIGHT + 1
+            )
+        else:
+            self.display.LINE_WEIGHT = max(1, self.display.LINE_WEIGHT - 1)
+        self.display.set_maze_data(self.mlx, self.mlx_ptr, self.maze_file)
+        self.display.run_maze_display()
+
+    def _cmd_random_colors(self):
+        self.display.set_colors(
+            *(random.randrange(0xFF0000FF, 0xFFFFFFFF) for _ in range(6))
+        )
+        self.display.run_maze_display()
+        if "reset_colors" not in self.display.layers.keys():
+            self.create_button("reset_colors", self.width - self.b2_width - 20,
+                               100, self.b2_width, self.b2_height, 0xFFFF7F00,
+                               "Reset colors", 0xFFFFFFFF)
+
+    def _cmd_reset_colors(self):
+        self.display.set_colors()
+        self.display.clear_layers("reset_colors")
+        self.display.run_maze_display()
+
+    def _cmd_adjust_speed(self, factor):
+        if factor < 1:
+            self.display.update_interval = max(
+                0.01, self.display.update_interval * factor
+            )
+        else:
+            self.display.update_interval = min(
+                2.0, self.display.update_interval * factor
+            )
+
     def handle_mouse(self, click, x, y, param) -> None:
-        if click == 1:
-            button = self.button_clicked(x, y)
-            if button and button.name == "reset":
-                generate_maze(self.maze_file)
-                self.display.clear_layers("path", "maze")
-                self.display.set_maze_data(
-                    self.mlx, self.mlx_ptr, self.maze_file
-                )
-                self.mlx.mlx_clear_window(self.mlx_ptr, self.win_ptr)
-                self.display.run_maze_display()
-            if button and button.name == "solve":
-                path_canvas = self.display.layers.get("path")["canvas"]
-                self.path_gen = self.display.draw_valid_path(path_canvas)
-                self.display.solving = True
-                if "faster" not in self.buttons.keys():
-                    self.create_button(
-                        "faster", (self.width - self.b1_width)
-                        // 2 + self.b1_width + 20,
-                        100, self.b2_width, self.b2_height, self.b2_color,
-                        "Faster!!", 0xFFFFFFFF)
-                if "slower" not in self.buttons.keys():
-                    self.create_button(
-                        "slower", (self.width - self.b1_width)
-                        // 2 - self.b1_width - 20,
-                        100, self.b2_width, self.b2_height, self.b1_color,
-                        "Slower!!", 0xFFFFFFFF)
-            if button and button.name == "faster":
-                self.display.update_interval = (
-                    self.display.update_interval * 0.5
-                )
-            if button and button.name == "slower":
-                self.display.update_interval = (
-                    self.display.update_interval * 1.5
-                )
+        if click != 1:
+            return
+
+        button = self.button_clicked(x, y)
+        if not button:
+            return
+
+        commands = {
+            "maze_colors": self._cmd_random_colors,
+            "reset_colors": self._cmd_reset_colors,
+            "reset_maze": self._cmd_reset_maze,
+            "solve_faster": partial(self._cmd_adjust_speed, 0.5),
+            "solve_slower": partial(self._cmd_adjust_speed, 1.5),
+            "solve_maze": self._cmd_solve_maze,
+            "walls_bigger": partial(self._cmd_resize_walls, 1),
+            "walls_smaller": partial(self._cmd_resize_walls, -1),
+        }
+
+        action = commands.get(button.name)
+        if action:
+            action()
 
     def update(self, param):
         if self.display.solving:
@@ -135,7 +193,7 @@ class Window:
         return self.buttons.get(name)
 
     def button_clicked(self, x, y) -> dict:
-        for button in self.buttons.values():
+        for button in reversed(list(self.buttons.values())):
             if (
                 x > button.pos_x
                 and x < button.pos_x + button.width

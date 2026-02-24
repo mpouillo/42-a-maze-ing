@@ -26,29 +26,33 @@ class Canvas:
                           (self.width * self.height * self.bytes_per_pixel))
 
         self.fonts_dir = "src/fonts"
-        self.font_dict = self.parse_font()
+        self.fonts_dict = self.parse_fonts(self.fonts_dir)
         self.font_scale = 3
         try:
-            self.font_width = (len(self.font_dict.get("a")[0])
+            self.font_width = (len(self.fonts_dict.get("a")[0])
                                * self.font_scale)
-            self.font_height = len(self.font_dict.get("a")) * self.font_scale
+            self.font_height = len(self.fonts_dict.get("a")) * self.font_scale
         except Exception:
-            sys.exit("Failed to parse font files")
+            sys.exit("Failed to parse fonts dictionnary")
 
-    def parse_font(self):
-        font_dict = {}
-        files = [f for f in os.listdir(self.fonts_dir)]
+    def parse_fonts(self, fonts_dir):
+        fonts_dict = {}
+        files = os.listdir(fonts_dir)
 
         for f in files:
-            with open("src/font/" + f) as font_file:
-                array = []
-                for line in font_file:
-                    row = []
-                    for c in line.strip():
-                        row.append(int(c, 16))
-                    array.append(row)
-                font_dict.update({f: array})
-        return font_dict
+            try:
+                with open(fonts_dir + "/" + f) as font_file:
+                    array = []
+                    for line in font_file:
+                        row = []
+                        for c in line.strip():
+                            row.append(int(c, 16))
+                        array.append(row)
+                    fonts_dict.update({chr(int(f)): array})
+            except (ValueError, TypeError) as e:
+                sys.exit("Error while parsing fonts:", e)
+
+        return fonts_dict
 
     def fill_rect(self, x: int, y: int,
                   width: int, height: int,
@@ -77,8 +81,8 @@ class Canvas:
     def draw_text(self, start_x, start_y, text, color):
         char_offset = 0
         for character in text.lower():
-            if str(ord(character)) in self.font_dict:
-                char_data = self.font_dict.get(character)
+            if character in self.fonts_dict:
+                char_data = self.fonts_dict.get(character)
                 for y, row in enumerate(char_data):
                     y *= self.font_scale
                     for x, value in enumerate(row):

@@ -5,7 +5,6 @@ import sys
 from importlib.metadata import version, PackageNotFoundError
 
 
-
 def main() -> None:
     from src import Window, generate_maze
 
@@ -23,7 +22,7 @@ def main() -> None:
                  "Incorrect 'OUTPUT_FILE' value")
 
     generate_maze(maze_file)
-    Window(maze_file, config_file, 1200, 1200)
+    Window(maze_file, config_file, 1620, 1020)
 
 
 def check_dependencies(req_filename: str) -> bool:
@@ -40,15 +39,17 @@ def check_dependencies(req_filename: str) -> bool:
         except PackageNotFoundError:
             missing.append(package)
     if len(missing) > 0:
-        print(f"The following packages could not be found: {', '.join(missing)}\n"
+        print("The following packages could not be found:",
+              ", ".join(missing), "\n"
               "Make sure to run the project with 'make'.")
         return False
     else:
         return True
 
+
 if __name__ == "__main__":
-    if check_dependencies("requirements.txt") == True:
+    if check_dependencies("requirements.txt") is True:
         try:
             main()
-        except (SystemExit, KeyboardInterrupt):
-            pass
+        except (SystemExit, KeyboardInterrupt) as e:
+            print("Exiting program:", e)
