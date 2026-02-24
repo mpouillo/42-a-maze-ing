@@ -1,17 +1,18 @@
 #!/usr/bin/env python3
 
+import os
 import sys
+from dotenv import load_dotenv
 from src.mlx import Mlx
 from src.canvas import Canvas
-from src.maze import Maze
 from typing import Any
 
 
-class DrawMaze(Maze):
+class DrawMaze:
     def __init__(self, mlx: Mlx, mlx_ptr: Any, win_ptr: Any,
                  window_width: int, window_height: int,
-                 config: str, maze_file: str) -> None:
-        super().__init__(config)
+                 config_file: str, maze_file: str) -> None:
+        self.load_config(config_file)
 
         self.MLX = mlx
         self.MLX_PTR = mlx_ptr
@@ -23,6 +24,20 @@ class DrawMaze(Maze):
         self.set_maze_data(self.MLX, self.MLX_PTR, maze_file)
         self.set_colors()
         self.update_interval = 0.5
+
+    def load_config(self, config_file: str) -> None:
+        load_dotenv(config_file)
+
+        try:
+            self.MAZE_WIDTH = int(os.environ.get("WIDTH"))
+            self.MAZE_HEIGHT = int(os.environ.get("HEIGHT"))
+        except ValueError:
+            sys.exit("Error while parsing config file")
+
+        try:
+            self.LINE_WEIGHT = int(os.environ.get("LINE_WEIGHT"))
+        except TypeError:
+            self.LINE_WEIGHT = 2
 
     def set_maze_data(self, mlx: Mlx, mlx_ptr: Any, maze_file: str):
         try:
