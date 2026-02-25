@@ -5,7 +5,7 @@ import os
 from typing import Any, List, Tuple
 
 
-load_dotenv("config.txt")
+
 
 
 class MazeGenerator:
@@ -16,11 +16,12 @@ class MazeGenerator:
     LEFT = 8
     FULL = 15
 
-    def __init__(self) -> None:
-        self.load_config()
+    def __init__(self, config_file: str) -> None:
+        self.load_config(config_file)
         seed(self.seed)
 
-    def load_config(self) -> None:
+    def load_config(self, config_file: str) -> None:
+        load_dotenv(config_file)
 
         self.height = int(str(os.environ.get("HEIGHT")))
         self.width = int(str(os.environ.get("WIDTH")))

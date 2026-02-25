@@ -1,6 +1,8 @@
 import numpy as np
 from src.algo.generation import MazeGenerator
+from dotenv import load_dotenv
 import sys
+import os
 
 
 def cell_to_hex(cell: int) -> str:
@@ -50,19 +52,21 @@ def write_resolve(maze: np.ndarray, filename: str, entry, exit_) -> None:
                 continue
 
 
-def generate_maze(filename: str) -> str:
+def generate_maze(config_file: str) -> str:
     try:
-        maze_gen = MazeGenerator()
+        load_dotenv(config_file)
+        output_file = os.environ.get("OUTPUT_FILE")
+        maze_gen = MazeGenerator(config_file)
 
         entry = maze_gen.entry
         exit_ = maze_gen.exit
 
         maze = maze_gen.generate()
-        write_maze(maze, filename, entry, exit_)
+        write_maze(maze, output_file, entry, exit_)
 
         solved = maze_gen.solve_deadends()
-        write_resolve(solved, filename, entry, exit_)
-        return filename
+        write_resolve(solved, output_file, entry, exit_)
+        return output_file
 
-    except (ValueError, IndexError) as e:
+    except (ValueError, TypeError, IndexError) as e:
         sys.exit(f"Configuration error: {e}")
