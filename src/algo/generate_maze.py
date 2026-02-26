@@ -52,21 +52,44 @@ def write_resolve(maze: np.ndarray, filename: str, entry, exit_) -> None:
                 continue
 
 
+def write_path(path, output_file):
+    with open(output_file, "a") as f:
+        for (r1, c1), (r2, c2) in zip(path, path[1:]):
+            dr, dc = r2 - r1, c2 - c1
+            if dr == -1 and dc == 0:
+                f.write("N")
+            elif dr == 1 and dc == 0:
+                f.write("S")
+            elif dr == 0 and dc == 1:
+                f.write("E")
+            elif dr == 0 and dc == -1:
+                f.write("W")
+
+
 def generate_maze(config_file: str) -> str:
     try:
         load_dotenv(config_file)
-        output_file = os.environ.get("OUTPUT_FILE")
+        output_file: str = str(os.environ.get("OUTPUT_FILE"))
         maze_gen = MazeGenerator(config_file)
 
-        entry = maze_gen.entry
-        exit_ = maze_gen.exit
+        entry: tuple = maze_gen.entry
+        exit_: tuple = maze_gen.exit
+        perfect: bool = maze_gen.perfect
 
         maze = maze_gen.generate()
         write_maze(maze, output_file, entry, exit_)
 
         solved = maze_gen.solve_deadends()
         write_resolve(solved, output_file, entry, exit_)
+
+        if perfect is False:
+            maze = maze_gen.add_paths(solved, output_file)
+            write_maze(maze, output_file, entry, exit_)
+            solved = maze_gen.solve_deadends()
+            path = maze_gen.bfs(solved)
+            write_path(path, output_file)
+
         return output_file
 
-    except (ValueError, TypeError, IndexError) as e:
+    except (Exception) as e:
         sys.exit(f"Configuration error: {e}")

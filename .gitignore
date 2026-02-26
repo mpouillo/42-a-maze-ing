@@ -208,7 +208,7 @@ __marimo__/
 
 # Project Assets
 output_validator.py
-.vscode/settings.json
+.vscode
 output_maze.txt
 miniconda
 src/mlx
