@@ -97,6 +97,11 @@ class MazeController:
 
     def update_window(self, param: Any = None) -> None:
         if self.solving is True:
+            if self.model.path_step == len(self.model.path):
+                self.solving = False
+                self.setup_ui()  # Reset UI to remove "Pause" label
+                self.view.refresh()
+                return
             current_time = time.time()
             if (
                 current_time - self.view.last_update
