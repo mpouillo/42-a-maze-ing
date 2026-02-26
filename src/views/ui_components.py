@@ -1,6 +1,9 @@
+from typing import Callable
+
+
 class Button:
     def __init__(self, label: str, x: int, y: int, z: int,
-                 width: int, height: int, action: callable) -> None:
+                 width: int, height: int, action: Callable) -> None:
         self.label = label
         self.x = x
         self.y = y

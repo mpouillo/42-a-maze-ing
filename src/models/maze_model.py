@@ -1,26 +1,41 @@
+from src.algo import generate_maze
 import sys
 
 
 class MazeModel:
-    def __init__(self, maze_file: str) -> None:
-        self.load_maze_data(maze_file)
-        self.path_step = 0
-        self.path_prev = 0
-        self.solving = False
+    def __init__(self, config_file: str) -> None:
+        self.config_file = config_file
+        self.regenerate_maze()
 
-    def load_maze_data(self, maze_file: str):
+        self.path_step: int = 0
+        self.path_prev: int = 0
+        self.solving: bool = False
+
+    @property
+    def path_step(self) -> int:
+        return self.__path_step
+
+    @path_step.setter
+    def path_step(self, step: int) -> None:
+        if step < 0:
+            step = 0
+        self.__path_step = min(step, len(self.path))
+
+    def regenerate_maze(self):
+        maze_file = generate_maze(self.config_file)
+
         try:
-            maze_dict = self.parse_maze(maze_file)
+            maze_dict: dict = self.parse_maze(maze_file)
         except FileNotFoundError:
             sys.exit(f"\"{maze_file}\" file not found.")
 
-        self.entry = maze_dict.get("entry")
-        self.exit = maze_dict.get("exit")
-        self.path = maze_dict.get("path")
-        self.grid = maze_dict.get("maze")
+        self.entry: tuple[int, int] = maze_dict.get("entry", (0, 0))
+        self.exit: tuple[int, int] = maze_dict.get("exit", (0, 0))
+        self.path: list[int] = maze_dict.get("path", (0, 0))
+        self.grid: list[list[int]] = maze_dict.get("maze", (0, 0))
 
-        self.width = len(self.grid[0])
-        self.height = len(self.grid)
+        self.width: int = len(self.grid[0])
+        self.height: int = len(self.grid)
 
     @staticmethod
     def parse_maze(filename: str) -> dict:

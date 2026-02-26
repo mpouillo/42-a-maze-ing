@@ -20,12 +20,11 @@ class MazeView:
 
         self.pad_w = 20
         self.pad_h = 250
-        self.wall_size = 3
+        self.wall_size = 2
         self.compute_scales()
 
-        self.path_gen = self.render_path()
-        self.last_path_update = 0
-        self.update_interval = 0.2
+        self.last_update = 0
+        self.update_interval = 0.1
 
         self.layers = {
             "maze": self.create_canvas(self.offset_x, self.offset_y,
@@ -35,7 +34,7 @@ class MazeView:
             "ui": self.create_canvas(0, 0, 10, self.win_w, self.win_h)
         }
 
-        self.buttons = {}
+        self.buttons: dict = {}
 
         self.colors = {
             "logo": 0xFFF0000FF,
@@ -110,11 +109,12 @@ class MazeView:
             self.colors[name] = new_color
 
     def render_maze(self):
-        canvas = self.layers.get("maze")
-        canvas.clear()
-        color = self.colors.get("walls")
         node = self.node_size
         wall = self.wall_size
+        color = self.colors.get("walls")
+
+        canvas = self.layers.get("maze")
+        canvas.clear()
 
         for y, row in enumerate(self.model.grid):
             for x, cell in enumerate(row):
@@ -168,16 +168,14 @@ class MazeView:
         return (alpha << 24) | (red << 16) | (green << 8) | blue
 
     def render_path(self):
-        while self.model.path_step < len(self.model.path):
-            self.draw_path_to_step(self.model.path_step)
-            self.model.path_step += 1
-            yield
-
-    def draw_path_to_step(self, step: int = 0):
-        canvas = self.layers.get("path")
         node = self.node_size
         wall = self.wall_size
+        step = self.model.path_step
         curr_y, curr_x = self.model.entry
+        canvas = self.layers.get("path")
+
+        canvas.clear()
+        self.draw_endpoints()
 
         for i in range(step):
             if i >= len(self.model.path):
@@ -219,15 +217,9 @@ class MazeView:
                 self.draw_endpoints()
                 return
 
-    def refresh(self):
-        self.mlx.mlx_clear_window(self.mlx_ptr, self.win_ptr)
-        for layer in self.layers.values():
-            self.mlx.mlx_put_image_to_window(
-                self.mlx_ptr, self.win_ptr, layer.ptr, layer.x, layer.y
-            )
-
     def render_ui(self):
         canvas = self.layers.get("ui")
+        canvas.clear()
         for button in self.buttons.values():
             self.draw_button(canvas, button)
 
@@ -280,3 +272,13 @@ class MazeView:
                                 font_scale, font_scale, color
                             )
             char_offset += (self.font_width + 1) * font_scale
+
+    def refresh(self):
+        self.mlx.mlx_clear_window(self.mlx_ptr, self.win_ptr)
+        self.render_maze()
+        self.render_path()
+        self.render_ui()
+        for layer in self.layers.values():
+            self.mlx.mlx_put_image_to_window(
+                self.mlx_ptr, self.win_ptr, layer.ptr, layer.x, layer.y
+            )

@@ -2,7 +2,6 @@ import os
 import random
 import time
 # from functools import partial
-from src.algo import generate_maze
 from src.models.maze_model import MazeModel
 from src.views.maze_view import MazeView
 from src.mlx import Mlx
@@ -24,40 +23,38 @@ class MazeController:
             self.mlx_ptr, window_width, window_height, "A-Maze-ing"
         )
 
-        # Maze setup
-        self.config_file = config_file
-        self.maze_file = generate_maze(self.config_file)
-        self.model = MazeModel(self.maze_file)
+        # Model/View setup
+        self.model = MazeModel(config_file)
         self.view = MazeView(
             self.mlx, self.mlx_ptr, self.win_ptr,
             self.window_width, self.window_height, self.model
         )
 
-        # Initial rendering
-        self.view.render_maze()
-        self.view.draw_endpoints()
+        # Button setup
         self.setup_ui()
-        self.view.render_ui()
-        self.view.refresh()
 
+    def run(self):
         # MLX hooks
         self.mlx.mlx_hook(self.win_ptr, 2, 1, self.handle_keypress, None)
         self.mlx.mlx_hook(self.win_ptr, 3, 2, self.handle_keyrelease, None)
         self.mlx.mlx_hook(self.win_ptr, 33, 0, self.close_window, None)
         self.mlx.mlx_mouse_hook(self.win_ptr, self.handle_mouseclick, None)
-        # self.mlx.mlx_hook(self.win_ptr, 6, 1 << 6,
-        # self.handle_mousehover, None)
+        #  self.mlx.mlx_hook(
+        #      self.win_ptr, 6, 1 << 6, self.handle_mousehover, None
+        #  )
         self.mlx.mlx_loop_hook(self.mlx_ptr, self.update_window, None)
 
-    def run(self):
+        # Window refresh
+        self.view.refresh()
+
+        # Loop start
         self.mlx.mlx_loop(self.mlx_ptr)
 
     def setup_ui(self):
         self.view.clear_buttons()
-        theme = self.view.ui_style
-        btn_width = theme.get("btn_width", 0)
-        btn_height = theme.get("btn_height", 0)
-        btn_spacing = theme.get("btn_spacing", 0)
+        btn_width = self.view.ui_style.get("btn_width", 0)
+        btn_height = self.view.ui_style.get("btn_height", 0)
+        btn_spacing = self.view.ui_style.get("btn_spacing", 0)
 
         self.view.add_button(
             "reset", "Reset Maze",
@@ -102,15 +99,12 @@ class MazeController:
         if self.solving is True:
             current_time = time.time()
             if (
-                current_time - self.view.last_path_update
+                current_time - self.view.last_update
                 >= self.view.update_interval
             ):
-                try:
-                    next(self.view.path_gen)
-                    self.view.last_path_update = current_time
-                    self.view.refresh()
-                except (StopIteration, AttributeError):
-                    self.solving = False
+                self.model.path_step += 1
+                self.view.last_update = current_time
+                self.view.refresh()
 
     def close_window(self, param: Any = None) -> None:
         self.mlx.mlx_release(self.mlx_ptr)
@@ -121,15 +115,11 @@ class MazeController:
         btn = self.view.buttons.get("skip")
         if self.model.path_step >= len(self.model.path):
             self.model.path_step = self.model.path_prev
-            self.view.layers.get("path").clear()
-            self.view.draw_endpoints()
             btn.label = "Skip"
         else:
             self.model.path_prev = self.model.path_step
             self.model.path_step = len(self.model.path)
             btn.label = "Undo"
-        self.view.draw_path_to_step(self.model.path_step)
-        self.view.render_ui()
         self.view.refresh()
 
         if self.solving:
@@ -138,25 +128,13 @@ class MazeController:
     def random_colors(self):
         for color in self.view.colors:
             self.view.colors[color] = random.randrange(0xFF000000, 0xFFFFFFFF)
-        self.view.render_maze()
-        self.view.draw_path_to_step(self.model.path_step)
         self.view.refresh()
 
     def reset_maze(self):
         self.solving = False
         self.setup_ui()
-
-        maze_file = generate_maze(self.config_file)
-        self.model.load_maze_data(maze_file)
+        self.model.regenerate_maze()
         self.model.path_step = 0
-
-        self.view.path_gen = self.view.render_path()
-        self.model.path_step = 0
-
-        self.view.layers.get("path").clear()
-        self.view.render_maze()
-        self.view.draw_endpoints()
-        self.view.render_ui()
         self.view.refresh()
 
     def toggle_solve(self):
@@ -167,12 +145,9 @@ class MazeController:
             if self.model.path_step >= len(self.model.path):
                 self.model.path_step = 0
                 self.view.layers.get("path").clear()
-                self.view.draw_endpoints()
-                self.view.path_gen = self.view.render_path()
                 self.view.refresh()
             btn.label = "Pause"
             self.view.buttons.get("skip").label = "Skip"
         else:
             btn.label = "Solve Maze"
-        self.view.render_ui()
         self.view.refresh()
