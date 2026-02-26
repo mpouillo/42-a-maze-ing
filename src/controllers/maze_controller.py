@@ -57,12 +57,12 @@ class MazeController:
         btn_spacing = self.view.ui_style.get("btn_spacing", 0)
 
         self.view.add_button(
-            "reset", "Reset Maze",
+            "regen", "Regenerate",
             (self.window_width - btn_width * 2 - btn_spacing) // 2,
-            btn_spacing, 9999, btn_width, btn_height, self.reset_maze
+            btn_spacing, 9999, btn_width, btn_height, self.regen_maze
         )
         self.view.add_button(
-            "solve", "Solve Maze", (self.window_width + btn_spacing) // 2,
+            "solve", "Play", (self.window_width + btn_spacing) // 2,
             btn_spacing, 9999, btn_width, btn_height, self.toggle_solve
         )
         self.view.add_button(
@@ -135,11 +135,10 @@ class MazeController:
             self.view.colors[color] = random.randrange(0xFF000000, 0xFFFFFFFF)
         self.view.refresh()
 
-    def reset_maze(self):
+    def regen_maze(self):
         self.solving = False
         self.setup_ui()
         self.model.regenerate_maze()
-        self.model.path_step = 0
         self.view.refresh()
 
     def toggle_solve(self):
@@ -154,5 +153,5 @@ class MazeController:
             btn.label = "Pause"
             self.view.buttons.get("skip").label = "Skip"
         else:
-            btn.label = "Solve Maze"
+            btn.label = "Play"
         self.view.refresh()

@@ -37,6 +37,8 @@ class MazeModel:
         self.width: int = len(self.grid[0])
         self.height: int = len(self.grid)
 
+        self.path_step = 0
+
     @staticmethod
     def parse_maze(filename: str) -> dict:
         '''Parse file and return maze data as a dict'''
