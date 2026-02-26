@@ -16,7 +16,8 @@ class MazeGenerator:
 
     def __init__(self, config_file: str) -> None:
         self.load_config(config_file)
-        seed(self.seed)
+        if self.seed is not None:
+            seed(self.seed)
 
     def load_config(self, config_file: str) -> None:
         load_dotenv(config_file)
@@ -45,8 +46,8 @@ class MazeGenerator:
         self.exit = (int(exit_str[0]), int(exit_str[1]))
 
         try:
-            seed = str(os.environ.get("SEED"))
-            self.seed = int(seed)
+            seed_str = str(os.environ.get("SEED"))
+            self.seed: Optional[int] = int(seed_str)
         except Exception:
             self.seed = None
 
@@ -167,7 +168,8 @@ class MazeGenerator:
 
         return self.maze
 
-    def count_walls(self, row: int, col: int, maze) -> int:
+    def count_walls(self, row: int, col: int,
+                    maze: np.ndarray[Any, Any]) -> int:
         """Count how many walls a specific cell has"""
         cell_val = maze[row, col]
         count = 0
@@ -181,15 +183,15 @@ class MazeGenerator:
             count += 1
         return count
 
-    def close_deadend(self, maze, row: int, col: int) -> None:
+    def close_deadend(self, maze: np.ndarray[Any, Any],
+                      row: int, col: int) -> None:
         """Fill a deadend by adding a wall to the only open side"""
         next_cell = (row, col)
-        # If TOP is open, close it (add TOP wall)
-        # and add BOTTOM wall to the neighbor above
-        while (next_cell != self.entry and
-               next_cell != self.exit and
-               self.count_walls(next_cell[0], next_cell[1], maze)) == 3:
-
+        while (
+            next_cell != self.entry
+            and next_cell != self.exit
+            and self.count_walls(next_cell[0], next_cell[1], maze) == 3
+        ):
             row, col = next_cell
             cell_val = maze[row, col]
 
@@ -235,10 +237,11 @@ class MazeGenerator:
                 break
         return maze
 
-    def add_paths(self, solved, filename) -> np.ndarray[Any, Any]:
+    def add_paths(self, solved: np.ndarray[Any, Any],
+                  file: str) -> np.ndarray[Any, Any]:
         row, col = self.entry
 
-        with open(filename, "r") as f:
+        with open(file, "r") as f:
             last_line = ""
             for line in f:
                 last_line = line
@@ -247,21 +250,20 @@ class MazeGenerator:
         added_path = False
         number_path = 0
         step = 0
-        next_pos = self.entry
-        prev = None
+        next_pos: Tuple[int, int] = self.entry
+        prev: Optional[Tuple[int, int]] = None
 
         while (row, col) != self.exit:
-
             value: bool = (randint(0, 3) == 0)
             curr = (row, col)
 
-            if not (solved[row, col] & self.TOP) and (row-1, col) != prev:
+            if not (solved[row, col] & self.TOP) and (row - 1, col) != prev:
                 next_pos = (row - 1, col)
             elif not (solved[row, col] & self.RIGHT) and (row, col+1) != prev:
                 next_pos = (row, col + 1)
             elif not (solved[row, col] & self.BOTTOM) and (row+1, col) != prev:
                 next_pos = (row + 1, col)
-            elif not (solved[row, col] & self.LEFT) and (row, col-1) != prev:
+            elif not (solved[row, col] & self.LEFT) and (row, col - 1) != prev:
                 next_pos = (row, col - 1)
 
             prev = curr
@@ -269,7 +271,9 @@ class MazeGenerator:
             step += 1
 
             if (value is True and added_path is False) or (
-                solve_size > 0 and step == solve_size / 2 and number_path == 0
+                solve_size > 0
+                and step == solve_size / 2
+                and number_path == 0
             ):
                 cell = (row, col)
                 blocked_cell = self.get_blocked_cell(solved, cell)
@@ -282,13 +286,20 @@ class MazeGenerator:
 
         return self.maze
 
-    def get_blocked_cell(self, solved, cell) -> Tuple | None:
-
+    def get_blocked_cell(
+        self,
+        solved: np.ndarray[Any, Any],
+        cell: Tuple[int, int],
+    ) -> Optional[Tuple[int, int]]:
         row, col = cell
 
-        def ok(row: int, col: int) -> bool:
-            return (0 <= row < self.height and 0 <= col < self.width and
-                    self.maze[row, col] != self.FULL)
+        def ok(r: int, c: int) -> bool:
+            return (
+                0 <= r < self.height
+                and 0 <= c < self.width
+                and self.maze[r, c] != self.FULL
+            )
+
         candidates: List[Tuple[int, int]] = []
         if (solved[row, col] & self.TOP) and ok(row - 1, col):
             candidates.append((row - 1, col))
@@ -307,26 +318,27 @@ class MazeGenerator:
 
         return candidates[randint(0, len(candidates) - 1)]
 
-    def get_neighbors_open(self, cell: Tuple[int, int], solved):
+    def get_neighbors_open(
+        self,
+        cell: Tuple[int, int],
+        solved: np.ndarray[Any, Any],
+    ) -> List[Tuple[int, int]]:
         r, c = cell
         neighbors: List[Tuple[int, int]] = []
 
-        # TOP
         if (solved[r, c] & self.TOP) == 0 and r > 0:
             neighbors.append((r - 1, c))
-        # RIGHT
         if (solved[r, c] & self.RIGHT) == 0 and c < self.width - 1:
             neighbors.append((r, c + 1))
-        # BOTTOM
         if (solved[r, c] & self.BOTTOM) == 0 and r < self.height - 1:
             neighbors.append((r + 1, c))
-        # LEFT
         if (solved[r, c] & self.LEFT) == 0 and c > 0:
             neighbors.append((r, c - 1))
 
         return neighbors
 
-    def bfs(self, solved):
+    def bfs(self,
+            solved: np.ndarray[Any, Any]) -> Optional[List[Tuple[int, int]]]:
         self.initialize_visited()
         self.apply_logo()
 
@@ -335,13 +347,14 @@ class MazeGenerator:
         q.append(self.entry)
 
         parent: Dict[Tuple[int, int], Optional[Tuple[int, int]]] = {
-            self.entry: None}
+            self.entry: None
+        }
         while q:
             curr = q.popleft()
 
             if curr == self.exit:
-                path = []
-                node = curr
+                path: List[Tuple[int, int]] = []
+                node: Optional[Tuple[int, int]] = curr
                 while node is not None:
                     path.append(node)
                     node = parent[node]
