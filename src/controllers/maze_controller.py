@@ -1,7 +1,6 @@
 import os
 import random
 import time
-# from functools import partial
 from src.models.maze_model import MazeModel
 from src.views.maze_view import MazeView
 from src.mlx import Mlx
@@ -38,10 +37,8 @@ class MazeController:
         self.mlx.mlx_hook(self.win_ptr, 2, 1, self.handle_keypress, None)
         self.mlx.mlx_hook(self.win_ptr, 3, 2, self.handle_keyrelease, None)
         self.mlx.mlx_hook(self.win_ptr, 33, 0, self.close_window, None)
-        self.mlx.mlx_mouse_hook(self.win_ptr, self.handle_mouseclick, None)
-        #  self.mlx.mlx_hook(
-        #      self.win_ptr, 6, 1 << 6, self.handle_mousehover, None
-        #  )
+        self.mlx.mlx_mouse_hook(self.win_ptr, self.handle_click, None)
+        self.mlx.mlx_hook(self.win_ptr, 6, 1 << 6, self.handle_hover, None)
         self.mlx.mlx_loop_hook(self.mlx_ptr, self.update_window, None)
 
         # Window refresh
@@ -86,7 +83,7 @@ class MazeController:
         if keycode in self.keys_pressed:
             self.keys_pressed.remove(keycode)
 
-    def handle_mouseclick(self, click, x, y, param) -> None:
+    def handle_click(self, click, x, y, param) -> None:
         if click != 1:
             return
 
@@ -95,10 +92,17 @@ class MazeController:
                 if button.action:
                     button.action()
 
+    def handle_hover(self, x, y, param) -> None:
+        for button in self.view.buttons.values():
+            if button.is_hovered(x, y) != button.hover:
+                button.hover = not button.hover
+                self.view.refresh()
+
     def update_window(self, param: Any = None) -> None:
         if self.solving is True:
             if self.model.path_step == len(self.model.path):
                 self.solving = False
+                self.model.path_prev = len(self.model.path)
                 self.setup_ui()  # Reset UI to remove "Pause" label
                 self.view.refresh()
                 return

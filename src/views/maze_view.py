@@ -24,7 +24,7 @@ class MazeView:
         self.compute_scales()
 
         self.last_update = 0
-        self.update_interval = 0.1
+        self.update_interval = 1/30  # 30 fps
 
         self.layers = {
             "maze": self.create_canvas(self.offset_x, self.offset_y,
