@@ -1,10 +1,11 @@
-from src.algo import generate_maze
+from src.algo.generate_maze import GenerateOutputFile
 import sys
 
 
 class MazeModel:
     def __init__(self, config_file: str) -> None:
         self.config_file = config_file
+        self.maze = GenerateOutputFile(self.config_file)
         self.regenerate_maze()
 
         self.path_step: int = 0
@@ -22,7 +23,7 @@ class MazeModel:
         self.__path_step = min(step, len(self.path))
 
     def regenerate_maze(self):
-        maze_file = generate_maze(self.config_file)
+        maze_file = self.maze.generate_maze()
 
         try:
             maze_dict: dict = self.parse_maze(maze_file)

@@ -1,3 +1,3 @@
-from .generate_maze import generate_maze
+from .generate_maze import GenerateOutputFile
 
-__all__ = ["generate_maze"]
+__all__ = ["GenerateOutputFile"]

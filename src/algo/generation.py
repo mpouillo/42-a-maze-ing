@@ -1,18 +1,12 @@
 from collections import deque
 from random import randint, seed
-import numpy as np
+from typing import Any, List, Tuple, Optional, Deque, Dict
 from dotenv import load_dotenv
 import os
-from typing import Any, List, Tuple, Optional, Deque, Dict
+import numpy as np
 
 
-class MazeGenerator:
-
-    TOP = 1
-    RIGHT = 2
-    BOTTOM = 4
-    LEFT = 8
-    FULL = 15
+class Base:
 
     def __init__(self, config_file: str) -> None:
         self.load_config(config_file)
@@ -76,6 +70,28 @@ class MazeGenerator:
             raise ValueError(
                 "PERFECT is not a bool : True or False"
             )
+
+        hex_: str = str(os.environ.get("HEX"))
+        if hex_ == "False" or perfect == "0":
+            self.hex_: bool = False
+        elif hex_ == "True" or perfect == "1":
+            self.hex_ = True
+        else:
+            raise ValueError(
+                "hex_ is not a bool : true or false"
+            )
+
+
+class MazeGenerator(Base):
+
+    TOP = 1
+    RIGHT = 2
+    BOTTOM = 4
+    LEFT = 8
+    FULL = 15
+
+    def __init__(self, config_file: str) -> None:
+        super().__init__(config_file)
 
     def initialize_maze(self) -> None:
         self.maze = np.full((self.height, self.width), 15, dtype=np.uint8)
