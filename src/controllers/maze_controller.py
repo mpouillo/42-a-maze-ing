@@ -3,7 +3,7 @@ import random
 import time
 from src.models.maze_model import MazeModel
 from src.views.maze_view import MazeView
-from src.mlx import Mlx
+from mlx import Mlx
 from typing import Any
 
 

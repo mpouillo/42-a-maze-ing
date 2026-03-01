@@ -1,5 +1,5 @@
 from typing import Any
-from src.mlx import Mlx
+from mlx import Mlx
 
 
 class Canvas:

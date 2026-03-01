@@ -1,6 +1,6 @@
 import os
 import sys
-from src.mlx import Mlx
+from mlx import Mlx
 from src.models.maze_model import MazeModel
 from src.views.ui_components import Button
 from src.views.canvas import Canvas

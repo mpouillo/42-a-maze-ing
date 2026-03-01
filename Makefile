@@ -12,15 +12,14 @@ CONDA_DIR := $(TMP_BASE)/$(USER_NAME)_miniconda
 CONDA_BIN = $(CONDA_DIR)/bin/conda
 CONDA_LINK = $(CURDIR)/miniconda
 ENV_NAME = conda_env
-PYTHON_VER = 3.10.12 # To check
-ENV_PYTHON = $(CONDA_DIR)/envs/$(ENV_NAME)/bin/python
-
-MLX_NAME = mlx
-MLX_FILE = mlx-2.2-py3-ubuntu-any.whl
-MLX_DIR = $(SRC_DIR)/$(MLX_NAME)
+ENV_DIR = $(CONDA_DIR)/envs/$(ENV_NAME)
+PYTHON_VER = 3.10.12
+ENV_PYTHON = $(ENV_DIR)/bin/python
 
 SYSTEM_DEPS =	flake8 \
 				mypy \
+				libvulkan-headers \
+				libvulkan-loader \
 				xorg-libxcb \
 				xcb-util \
 				xcb-util-keysyms \
@@ -30,32 +29,51 @@ SYSTEM_DEPS =	flake8 \
 
 all:
 	@if [ -x "$(ENV_PYTHON)" ]; then \
+		MISSING_PKGS=0; \
+		INSTALLED_LIST=$$($(CONDA_BIN) list -n $(ENV_NAME)); \
+		for pkg in $(SYSTEM_DEPS); do \
+			if ! echo "$$INSTALLED_LIST" | grep -q "^$$pkg "; then \
+				echo "Missing: $$pkg"; \
+				MISSING_PKGS=1; \
+			fi; \
+		done; \
+		if [ $$MISSING_PKGS -eq 1 ]; then \
+			$(MAKE) --no-print-directory install; \
+		fi; \
 		echo "Starting '$(NAME)'..."; \
 		$(MAKE) --no-print-directory run; \
 	else \
 		$(MAKE) --no-print-directory install; \
 	fi
 
-install: install_mlx install_conda create_env
+install: install_conda create_env
 	@echo "Installing dependencies into $(ENV_NAME)..."
 	@$(CONDA_BIN) install -y -q -n $(ENV_NAME) --override-channels \
-	-c conda-forge --file requirements.txt $(SYSTEM_DEPS) > /dev/null 2>&1 \
+	-c conda-forge --file requirements.txt $(SYSTEM_DEPS) >/dev/null 2>&1 \
 		|| (echo "Error: Dependency installation failed."; exit 1)
+	@$(MAKE) --no-print-directory install_mlx
 	@echo "Setup complete. Use 'make run' to start."
 
 install_mlx:
-	@if [ ! -d "$(MLX_DIR)" ]; then \
-		echo "Installing mlx into '$(MLX_DIR)'..."; \
-		unzip -uq $(MLX_FILE) -d src; \
-		rm -rf src/mlx-2.2.dist-info; \
+	@if ! $(ENV_PYTHON) -c "import mlx" >/dev/null 2>&1; then \
+		echo "Installing mlx package..."; \
+		( \
+			wget -q https://cdn.intra.42.fr/document/document/46950/mlx_CLXV-2.2.tgz && \
+			tar -xf mlx_CLXV-2.2.tgz && \
+			cd mlx_CLXV && \
+			export PATH=$(ENV_DIR)/bin:$$PATH && \
+			export CPATH=$(ENV_DIR)/include && \
+			export LIBRARY_PATH=$(ENV_DIR)/lib && \
+			export LD_LIBRARY_PATH=$(ENV_DIR)/lib && \
+			$(ENV_PYTHON) -m pip install build && \
+			SHELL=/bin/bash ./configure.sh && \
+			$(MAKE) \
+		) >/dev/null 2>&1 && \
+		$(ENV_PYTHON) -m pip install mlx_CLXV/mlx-2.2-py3-none-any.whl -q && \
+		$(RM) -r mlx_CLXV mlx_CLXV-2.2.tgz \
+		|| (echo "Error: mlx installation failed."; exit 1); \
 	else \
-		echo "Mlx already installed in '$(MLX_DIR)'."; \
-	fi
-
-remove_mlx:
-	@if [ -d "$(MLX_DIR)" ]; then \
-		echo "Removing mlx directory..."; \
-		$(RM) -r $(MLX_DIR); \
+		echo "Mlx already installed."; \
 	fi
 
 install_conda:
@@ -129,7 +147,7 @@ clean:
 		find . -type d \( -name ".mypy_cache" -o -name "__pycache__" \) -exec rm -rf {} +; \
 	fi
 
-fclean: clean remove_conda remove_mlx
+fclean: clean remove_conda
 
 re: fclean all
 
