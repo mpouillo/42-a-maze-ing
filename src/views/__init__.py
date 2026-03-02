@@ -1,9 +1,9 @@
 from .canvas import Canvas
-from .maze_view import MazeView
 from .ui_components import Button
+from .renderers import SquareRenderer
 
 __all__ = [
     "Button",
     "Canvas",
-    "MazeView"
+    "SquareRenderer"
 ]

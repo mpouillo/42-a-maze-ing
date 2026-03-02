@@ -1,5 +1,5 @@
-from .controllers import MazeController
+from .app import Application
 
 __all__ = [
-    "MazeController"
+    "Application"
 ]

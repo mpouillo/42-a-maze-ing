@@ -7,7 +7,7 @@ from src.views.canvas import Canvas
 from typing import Any
 
 
-class MazeView:
+class SquareRenderer:
     def __init__(self, mlx: Mlx, mlx_ptr: Any, win_ptr: Any,
                  window_width: int, window_height: int,
                  model: MazeModel) -> None:
