@@ -1,7 +1,7 @@
 import sys
 import os
 import numpy as np
-from typing import Union, Any, Generator, Tuple, Optional
+from typing import Union, Generator, Tuple, Optional
 
 from src.algo.maze_config import MazeConfig
 from src.algo.generation import MazeGenerator
@@ -41,19 +41,34 @@ class MazeController:
         if self._maze is not None:
             self.file_manager.write_maze(self.output_file, self._maze)
 
-    def save_solution(self, path: Any = None) -> None:
-        """Saves the solution string to the existing maze file."""
-        if self._solved_maze is not None:
-            # 1. Primary solution (Dead-end filling)
-            sol_str = self.file_manager.resolve_to_string(
-                self._solved_maze, self.generator
-            )
-            self.file_manager.append_solution(self.output_file, sol_str)
+    def save_solution(self,
+                      path: Optional[list[Tuple[int, int]]] = None) -> None:
+        """Saves the solution string to the output file."""
 
-            # 2. BFS solution (Required for imperfect mazes)
-            if not self.config.perfect and path:
-                bfs_str = self.file_manager.path_to_string(path)
-                self.file_manager.append_solution(self.output_file, bfs_str)
+        if path is None:
+            path = self.solve_maze()
+
+        bfs_str = self.file_manager.path_to_string(path)
+        self.file_manager.append_solution(self.output_file, bfs_str)
+
+    def solve_maze(self) -> Optional[list[Tuple[int, int]]]:
+        """
+        Calcule la solution finale
+        """
+        if self._maze is None:
+            self._maze = self.generator.generate()
+
+            if not self.config.perfect:
+                self._solved_maze = self.generator.solve_deadends()
+                sol_str = self.file_manager.resolve_to_string(
+                   self._solved_maze, self.generator
+                )
+                self._maze = self.generator.add_paths(
+                   self._solved_maze, len(sol_str)
+                )
+
+        path = self.generator.bfs(self._maze)
+        return path
 
     #  VISUALIZATION
 
