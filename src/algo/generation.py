@@ -174,11 +174,16 @@ class MazeGenerator:
                     maze[row, col - 1] |= self.RIGHT
                     next_cell = (row, col - 1)
 
-    def solve_deadends(self) -> np.ndarray[Any, Any]:
+    def solve_deadends_steps(
+        self
+    ) -> Generator[Tuple[np.ndarray, Tuple[int, int]]]:
         """
         Removes dead ends to find the solution.
         """
         maze = self.maze.copy()
+
+        yield maze, self.entry
+
         while True:
             found_deadend = False
             for row in range(self.height):
@@ -188,12 +193,24 @@ class MazeGenerator:
                             self.count_walls(row, col, maze) == 3):
                         self.close_deadend(maze, row, col)
                         found_deadend = True
+
+                        yield maze, (row, col)
+
             if not found_deadend:
                 break
-        return maze
 
-    def add_paths(self, solved: np.ndarray[Any, Any],
-                  solution_str_len: int) -> np.ndarray[Any, Any]:
+    def solve_deadends(self) -> np.ndarray[Any, Any]:
+        """
+        Removes dead ends to find the solution.
+        """
+        last_maze = self.maze.copy()
+        for maze_state, _ in self.solve_deadends_steps():
+            last_maze = maze_state
+        return last_maze
+
+    def add_paths_steps(
+        self, solved: np.ndarray[Any, Any], solution_str_len: int
+    ) -> Generator[Tuple[np.ndarray, Tuple[int, int]]]:
         row, col = self.entry
 
         solve_size = max(0, solution_str_len)
@@ -203,6 +220,8 @@ class MazeGenerator:
         step = 0
         next_pos: Tuple[int, int] = self.entry
         prev: Optional[Tuple[int, int]] = None
+
+        yield self.maze, (row, col)
 
         while (row, col) != self.exit:
             value: bool = (randint(0, 3) == 0)
@@ -221,6 +240,8 @@ class MazeGenerator:
             row, col = next_pos
             step += 1
 
+            yield self.maze, (row, col)
+
             if (value is True and added_path is False) or (
                 solve_size > 0
                 and step == int(solve_size / 2)
@@ -232,9 +253,15 @@ class MazeGenerator:
                     added_path = True
                     self.remove_wall(cell, blocked_cell)
                     number_path += 1
+                    yield self.maze, blocked_cell
             else:
                 added_path = False
 
+    def add_paths(self, solved: np.ndarray[Any, Any],
+                  solution_str_len: int) -> np.ndarray[Any, Any]:
+        """Version bloquante qui consomme le générateur"""
+        for _ in self.add_paths_steps(solved, solution_str_len):
+            pass
         return self.maze
 
     def get_blocked_cell(
@@ -288,8 +315,47 @@ class MazeGenerator:
 
         return neighbors
 
+    def bfs_steps(
+        self, solved: np.ndarray[Any, Any]
+    ) -> Generator[Tuple[np.ndarray, Tuple[int, int]], None, None]:
+        """
+        Yields the maze state at each step of the BFS exploration.
+        Allows visualizing the 'wave' of exploration.
+        """
+        self.initialize_visited()
+        self.set_logo_as_visited()
+
+        q: Deque[Tuple[int, int]] = deque()
+
+        # Mark entry as visited and add to queue
+        self.visited[self.entry] = True
+        q.append(self.entry)
+
+        # Yield initial state
+        yield self.maze, self.entry
+
+        while q:
+            curr = q.popleft()
+
+            # Yield the current cell being processed (popped from queue)
+            yield self.maze, curr
+
+            if curr == self.exit:
+                return
+
+            neighbors = self.get_neighbors_open(curr, solved)
+            for nxt in neighbors:
+                if not self.visited[nxt]:
+                    self.visited[nxt] = True
+                    q.append(nxt)
+                    yield self.maze, nxt
+
     def bfs(self,
             solved: np.ndarray[Any, Any]) -> Optional[List[Tuple[int, int]]]:
+        """
+        Standard BFS to find the shortest path from Entry to Exit.
+        Returns the path as a list of coordinates.
+        """
         self.initialize_visited()
         self.set_logo_as_visited()
 
@@ -297,13 +363,16 @@ class MazeGenerator:
         self.visited[self.entry] = True
         q.append(self.entry)
 
+        # Dictionary to store the path: child -> parent
         parent: Dict[Tuple[int, int], Optional[Tuple[int, int]]] = {
             self.entry: None
         }
+
         while q:
             curr = q.popleft()
 
             if curr == self.exit:
+                # Reconstruct path by backtracking from Exit to Entry
                 path: List[Tuple[int, int]] = []
                 node: Optional[Tuple[int, int]] = curr
                 while node is not None:
@@ -317,4 +386,5 @@ class MazeGenerator:
                     self.visited[nxt] = True
                     parent[nxt] = curr
                     q.append(nxt)
+
         return None

@@ -191,8 +191,17 @@ class HexMazeGenerator:
             if not found_open:
                 break
 
-    def solve_deadends(self) -> np.ndarray[Any, Any]:
+    def solve_deadends_steps(
+        self
+    ) -> Generator[Tuple[np.ndarray, Tuple[int, int]], None, None]:
+        """
+        Yields map state while removing dead ends.
+        """
         maze = self.maze.copy()
+
+        # Initial yield
+        yield maze, self.entry
+
         while True:
             found_deadend = False
             for row in range(self.height):
@@ -200,36 +209,44 @@ class HexMazeGenerator:
                     if ((row, col) != self.entry and
                             (row, col) != self.exit and
                             self.count_walls(row, col, maze) == 5):
+
                         self.close_deadend(maze, row, col)
                         found_deadend = True
+
+                        # Yield tovisualize the dead end being closed
+                        yield maze, (row, col)
+
             if not found_deadend:
                 break
-        return maze
 
-    def add_paths(
+        # Final state
+        yield maze, self.exit
+
+    def solve_deadends(self) -> np.ndarray[Any, Any]:
+        """Blocking version that consumes the steps generator"""
+        last_maze = self.maze.copy()
+        for maze_state, _ in self.solve_deadends_steps():
+            last_maze = maze_state
+        return last_maze
+
+    def add_paths_steps(
         self,
         solved: np.ndarray[Any, Any],
         solution_str_len: int,
-    ) -> np.ndarray[Any, Any]:
+    ) -> Generator[Tuple[np.ndarray, Tuple[int, int]], None, None]:
 
         row, col = self.entry
-
         solve_size = max(0, solution_str_len)
         added_path = False
         number_path = 0
         step = 0
-
-        # ... logic for traversing BFS path to add loops ...
-        # NOTE: This part requires traversing the solution path again.
-        # Since logic is complex to "guess" next step without path list,
-        # we rely on the `solved` grid which only has the solution open.
-
         prev: Optional[Tuple[int, int]] = None
+
+        yield self.maze, (row, col)
 
         while (row, col) != self.exit:
             value: bool = (randint(0, 3) == 0)
 
-            # Find next step in solution
             offsets = (
                 self._even_neighbors if row % 2 == 0 else self._odd_neighbors
             )
@@ -237,6 +254,7 @@ class HexMazeGenerator:
 
             current_solved_val = int(solved[row, col])
 
+            # Find next step in solved path
             for (dr, dc), (mask, _) in offsets.items():
                 nr, nc = row + dr, col + dc
                 if (current_solved_val & mask) == 0:
@@ -249,7 +267,8 @@ class HexMazeGenerator:
             row, col = next_pos
             step += 1
 
-            # Logic to punch holes randomly or at midpoint
+            yield self.maze, (row, col)
+
             if (value is True and added_path is False) or (
                 solve_size > 0
                 and step == int(solve_size / 2)
@@ -261,9 +280,20 @@ class HexMazeGenerator:
                     added_path = True
                     self.remove_wall(cell, blocked_cell)
                     number_path += 1
+
+                    # Yield the new loop creation
+                    yield self.maze, blocked_cell
             else:
                 added_path = False
 
+    def add_paths(
+        self,
+        solved: np.ndarray[Any, Any],
+        solution_str_len: int,
+    ) -> np.ndarray[Any, Any]:
+        """Blocking version that consumes the steps generator"""
+        for _ in self.add_paths_steps(solved, solution_str_len):
+            pass
         return self.maze
 
     def get_blocked_cell(
@@ -310,6 +340,33 @@ class HexMazeGenerator:
                     neighbors.append((nr, nc))
 
         return neighbors
+
+    def bfs_steps(
+        self, solved: np.ndarray[Any, Any]
+    ) -> Generator[Tuple[np.ndarray, Tuple[int, int]], None, None]:
+        """
+        Yields the maze state at each step of the BFS exploration.
+        Allows visualizing the 'wave' of exploration.
+        """
+        self.initialize_visited()
+
+        q: Deque[Tuple[int, int]] = deque()
+        self.visited[self.entry] = True
+        q.append(self.entry)
+
+        yield self.maze, self.entry
+
+        while q:
+            curr = q.popleft()
+            yield self.maze, curr
+
+            if curr == self.exit:
+                return
+
+            for nxt in self.get_neighbors_open(curr, solved):
+                if not self.visited[nxt]:
+                    self.visited[nxt] = True
+                    q.append(nxt)
 
     def bfs(self,
             solved: np.ndarray[Any, Any]) -> Optional[List[Tuple[int, int]]]:
