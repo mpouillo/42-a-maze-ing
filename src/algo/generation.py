@@ -1,88 +1,11 @@
 from collections import deque
 from random import randint, seed
-from typing import Any, List, Tuple, Optional, Deque, Dict
-from dotenv import load_dotenv
-import os
+from typing import Any, List, Tuple, Optional, Deque, Dict, Generator
 import numpy as np
+from src.algo.maze_config import MazeConfig
 
 
-class Base:
-
-    def __init__(self, config_file: str) -> None:
-        self.load_config(config_file)
-        if self.seed is not None:
-            seed(self.seed)
-
-    def load_config(self, config_file: str) -> None:
-        load_dotenv(config_file)
-
-        self.height = int(str(os.environ.get("HEIGHT")))
-        self.width = int(str(os.environ.get("WIDTH")))
-
-        if self.height <= 0 or self.width <= 0:
-            raise ValueError(
-                "HEIGHT and WIDTH must be positive"
-            )
-
-        if self.height < 7 or self.width < 9:
-            raise ValueError(
-                "Maze must be at least 7x9"
-            )
-
-        entry_str = str(os.environ.get("ENTRY")).strip().split(',')
-        if len(entry_str) != 2:
-            raise ValueError("ENTRY must be 'row,col'")
-        self.entry = (int(entry_str[0]), int(entry_str[1]))
-
-        exit_str = str(os.environ.get("EXIT")).strip().split(',')
-        if len(exit_str) != 2:
-            raise ValueError("EXIT must be 'row,col'")
-        self.exit = (int(exit_str[0]), int(exit_str[1]))
-
-        try:
-            seed_str = str(os.environ.get("SEED"))
-            self.seed: Optional[int] = int(seed_str)
-        except Exception:
-            self.seed = None
-
-        erow, ecol = self.entry
-        xrow, xcol = self.exit
-
-        if self.entry == self.exit:
-            raise ValueError(
-                "The ENTRY can't be at the same place as the EXIT"
-            )
-        if not (0 <= erow < self.height and 0 <= ecol < self.width):
-            raise ValueError(
-                f"ENTRY {self.entry} is outside maze bounds "
-            )
-        if not (0 <= xrow < self.height and 0 <= xcol < self.width):
-            raise ValueError(
-                f"EXIT {self.exit} is outside maze bounds "
-            )
-
-        perfect: str = str(os.environ.get("PERFECT"))
-        if perfect == "False" or perfect == "0":
-            self.perfect: bool = False
-        elif perfect == "True" or perfect == "1":
-            self.perfect = True
-        else:
-            raise ValueError(
-                "PERFECT is not a bool : True or False"
-            )
-
-        hex_: str = str(os.environ.get("HEX"))
-        if hex_ == "False" or perfect == "0":
-            self.hex_: bool = False
-        elif hex_ == "True" or perfect == "1":
-            self.hex_ = True
-        else:
-            raise ValueError(
-                "hex_ is not a bool : true or false"
-            )
-
-
-class MazeGenerator(Base):
+class MazeGenerator:
 
     TOP = 1
     RIGHT = 2
@@ -90,16 +13,25 @@ class MazeGenerator(Base):
     LEFT = 8
     FULL = 15
 
-    def __init__(self, config_file: str) -> None:
-        super().__init__(config_file)
+    def __init__(self, config: MazeConfig) -> None:
+        self.config = config
 
-    def initialize_maze(self) -> None:
+        self.height = config.height
+        self.width = config.width
+        self.entry = config.entry
+        self.exit = config.exit
+        self.perfect = config.perfect
+
+        if config.seed is not None:
+            seed(config.seed)
+
+    def initialize_maze_grid(self) -> None:
         self.maze = np.full((self.height, self.width), 15, dtype=np.uint8)
 
     def initialize_visited(self) -> None:
         self.visited = np.zeros((self.height, self.width), dtype=bool)
 
-    def apply_logo(self) -> None:
+    def set_logo_as_visited(self) -> None:
         """Mark logo area as visited so the maze generates around it"""
         with open("src/algo/logo.txt", "r") as f:
             logo = f.read()
@@ -108,8 +40,8 @@ class MazeGenerator(Base):
         if not logo_rows:
             return
 
-        center_row = self.visited.shape[0] // 2 - len(logo_rows) // 2
-        center_col = self.visited.shape[1] // 2 - len(logo_rows[0]) // 2
+        center_row = (self.visited.shape[0] - len(logo_rows)) // 2
+        center_col = (self.visited.shape[1] - len(logo_rows[0])) // 2
 
         for row in range(0, len(logo_rows)):
             for col in range(0, len(logo_rows[0])):
@@ -156,10 +88,10 @@ class MazeGenerator(Base):
             self.maze[current] &= 0XFF & ~self.RIGHT
             self.maze[next_cell] &= 0XFF & ~self.LEFT
 
-    def generate(self) -> np.ndarray[Any, Any]:
-        self.initialize_maze()
+    def generate_steps(self) -> Generator[Tuple[np.ndarray, Tuple[int, int]]]:
+        self.initialize_maze_grid()
         self.initialize_visited()
-        self.apply_logo()
+        self.set_logo_as_visited()
 
         if self.visited[self.entry]:
             raise ValueError(f"ENTRY {self.entry} inside the logo area")
@@ -168,6 +100,8 @@ class MazeGenerator(Base):
 
         self.visited[self.entry] = True
         stack: List[Tuple[int, int]] = [self.entry]
+
+        yield self.maze, self.entry
 
         while stack:
             curr_cell = stack.pop()
@@ -182,6 +116,11 @@ class MazeGenerator(Base):
 
                 stack.append(next_cell)
 
+                yield self.maze, next_cell
+
+    def generate(self) -> np.ndarray[Any, Any]:
+        for _ in self.generate_steps():
+            pass
         return self.maze
 
     def count_walls(self, row: int, col: int,
@@ -254,15 +193,11 @@ class MazeGenerator(Base):
         return maze
 
     def add_paths(self, solved: np.ndarray[Any, Any],
-                  file: str) -> np.ndarray[Any, Any]:
+                  solution_str_len: int) -> np.ndarray[Any, Any]:
         row, col = self.entry
 
-        with open(file, "r") as f:
-            last_line = ""
-            for line in f:
-                last_line = line
+        solve_size = max(0, solution_str_len)
 
-        solve_size = max(0, len(last_line) - 1)
         added_path = False
         number_path = 0
         step = 0
@@ -288,7 +223,7 @@ class MazeGenerator(Base):
 
             if (value is True and added_path is False) or (
                 solve_size > 0
-                and step == solve_size / 2
+                and step == int(solve_size / 2)
                 and number_path == 0
             ):
                 cell = (row, col)
@@ -356,7 +291,7 @@ class MazeGenerator(Base):
     def bfs(self,
             solved: np.ndarray[Any, Any]) -> Optional[List[Tuple[int, int]]]:
         self.initialize_visited()
-        self.apply_logo()
+        self.set_logo_as_visited()
 
         q: Deque[Tuple[int, int]] = deque()
         self.visited[self.entry] = True
