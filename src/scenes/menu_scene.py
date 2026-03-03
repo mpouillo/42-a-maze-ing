@@ -39,10 +39,8 @@ class MenuScene(BaseScene):
         self.app.current_scene = GameScene(self.app)
 
     def update(self):
-        x, y = self.app.get_mouse_position()
-        for button in self.view.buttons.values():
-            if button.is_hovered(x, y) != button.hover:
-                button.hover = not button.hover
+        self.view.render_ui()
+        super().update()
 
     def render(self):
         self.view.refresh()

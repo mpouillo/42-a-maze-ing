@@ -6,8 +6,6 @@ class SquareRenderer(BaseRenderer):
     def __init__(self, app, model: MazeModel) -> None:
         super().__init__(app, model)
 
-        self.pad_w = 20
-        self.pad_h = 250
         self.wall_size = 2
         self.compute_scales()
 
@@ -19,7 +17,7 @@ class SquareRenderer(BaseRenderer):
                                        0, self.maze_w, self.maze_h),
             "path": self.create_canvas(self.offset_x, self.offset_y,
                                        1, self.maze_w, self.maze_h),
-            "ui": self.create_canvas(0, 0, 10, self.app.window_width,
+            "ui": self.create_canvas(0, 0, 99, self.app.window_width,
                                      self.app.window_height)
         }
 
@@ -29,7 +27,8 @@ class SquareRenderer(BaseRenderer):
             "exit": 0xFFFF0000,
             "path_1": 0xFF00FF00,
             "path_2": 0xFFFF0000,
-            "walls": 0xFFFFFFFF
+            "walls": 0xFFFFFFFF,
+            "character": 0xFF00FFFF
         }
 
     def compute_scales(self):
@@ -134,13 +133,3 @@ class SquareRenderer(BaseRenderer):
             if (curr_y, curr_x) == self.model.exit:
                 self.draw_endpoints()
                 return
-
-    def refresh(self):
-        self.app.mlx.mlx_clear_window(self.app.mlx_ptr, self.app.win_ptr)
-        self.render_maze()
-        self.render_path()
-        self.render_ui()
-        for layer in self.layers.values():
-            self.app.mlx.mlx_put_image_to_window(
-                self.app.mlx_ptr, self.app.win_ptr, layer.ptr, layer.x, layer.y
-            )

@@ -10,6 +10,9 @@ class BaseRenderer:
         self.app = app
         self.model = model
 
+        self.pad_w = 20
+        self.pad_h = 100
+
         self.layers = {
             "ui": self.create_canvas(0, 0, 0, self.app.window_width,
                                      self.app.window_height)
@@ -63,6 +66,11 @@ class BaseRenderer:
                       width: int, height: int) -> Canvas:
         return Canvas(self.app.mlx, self.app.mlx_ptr, x, y, z, width, height)
 
+    def clear_canvas(self):
+        for layer in self.layers.values():
+            layer.clear()
+        self.layers.clear()
+
     def update_color(self, name: str, new_color: int) -> None:
         if name in self.colors:
             self.colors[name] = new_color
@@ -106,27 +114,36 @@ class BaseRenderer:
 
     def draw_button(self, canvas: Canvas, btn: Button):
         theme = self.ui_style
+        bw = theme.get("border_weight")
         bg_color = (
             theme.get("btn_hover") if btn.hover else theme.get("btn_bg")
         )
-        bw = theme.get("border_weight")
-        font_scale = theme.get("font_scale")
 
         canvas.fill_rect(btn.x - bw, btn.y - bw, btn.width + bw * 2,
                          btn.height + bw * 2, theme.get("btn_border"))
         canvas.fill_rect(btn.x, btn.y, btn.width, btn.height, bg_color)
 
+        if len(btn.label) == 0:
+            return
+
+        base_text_w = (len(btn.label) * (self.font_width + 1) - 1)
+        max_scale = btn.width // base_text_w
+        theme_scale = theme.get("font_scale", 1)
+        font_scale = max(1, min(max_scale, theme_scale))
+
         text_w = (len(btn.label) * (self.font_width + 1) - 1) * font_scale
         text_h = self.font_height * font_scale
         text_x = btn.x + (btn.width - text_w) // 2
         text_y = btn.y + (btn.height - text_h) // 2
-        self.draw_text(canvas, text_x, text_y,
-                       btn.label, theme.get("btn_text"))
+
+        self.draw_text(canvas, text_x, text_y, btn.label,
+                       theme.get("btn_text"), font_scale)
 
     def draw_text(self, canvas: Canvas, start_x: int, start_y: int,
-                  text: str, color: int) -> None:
+                  text: str, color: int, scale: int | None = None) -> None:
         char_offset = 0
-        font_scale = self.ui_style.get("font_scale")
+        font_scale = (scale if scale is not None
+                      else self.ui_style.get("font_scale", 1))
         for character in text.lower():
             if character in self.fonts_dict:
                 char_data = self.fonts_dict.get(character)
@@ -143,7 +160,6 @@ class BaseRenderer:
 
     def refresh(self):
         self.app.mlx.mlx_clear_window(self.app.mlx_ptr, self.app.win_ptr)
-        self.render_ui()
         for layer in self.layers.values():
             self.app.mlx.mlx_put_image_to_window(
                 self.app.mlx_ptr, self.app.win_ptr, layer.ptr, layer.x, layer.y
