@@ -5,13 +5,14 @@ from src.views.renderers import SquareRenderer
 from typing import Any
 
 
-class SolveScene(BaseScene):
-    def __init__(self) -> None:
+class DisplayScene(BaseScene):
+    def __init__(self, app) -> None:
+        super().__init__(app)
         self.solving = False
 
         # Model/View setup
-        self.model = MazeModel(self.config_file)
-        self.view = SquareRenderer(self.model)
+        self.model = MazeModel(self.app.config_file)
+        self.view = SquareRenderer(self.app, self.model)
 
         # Button setup
         self.setup_ui()
@@ -24,21 +25,21 @@ class SolveScene(BaseScene):
 
         self.view.add_button(
             "regen", "Regenerate",
-            (self.window_width - btn_width * 2 - btn_spacing) // 2,
+            (self.app.window_width - btn_width * 2 - btn_spacing) // 2,
             btn_spacing, 9999, btn_width, btn_height, self.regen_maze
         )
         self.view.add_button(
-            "solve", "Play", (self.window_width + btn_spacing) // 2,
+            "solve", "Play", (self.app.window_width + btn_spacing) // 2,
             btn_spacing, 9999, btn_width, btn_height, self.toggle_solve
         )
         self.view.add_button(
             "random_colors", "Random colors",
-            (self.window_width - btn_width * 2 - btn_spacing) // 2,
+            (self.app.window_width - btn_width * 2 - btn_spacing) // 2,
             btn_spacing * 2 + btn_height, 9999, btn_width, btn_height,
             self.random_colors
         )
         self.view.add_button(
-            "skip", "Skip", (self.window_width + btn_spacing) // 2,
+            "skip", "Skip", (self.app.window_width + btn_spacing) // 2,
             btn_spacing * 2 + btn_height, 9999, btn_width, btn_height,
             self.skip_solve
         )
