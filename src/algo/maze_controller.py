@@ -79,7 +79,7 @@ class MazeController:
 
     def get_generation_steps(
             self
-    ) -> Generator[Tuple[np.ndarray, Tuple[int, int]]]:
+    ) -> Generator[Tuple[np.ndarray, Tuple[int, int]], None, None]:
         """
         Phase 1: Animation of walls being broken.
         """
@@ -88,78 +88,31 @@ class MazeController:
             self._maze = maze
             yield maze, cell
 
+        if self.config.perfect is False:
+            self._solved_maze = self.generator.solve_deadends()
+            sol_str = self.file_manager.resolve_to_string(self._solved_maze,
+                                                          self.generator)
+
+            imper_gen = self.generator.add_paths_steps(self._solved_maze,
+                                                       len(sol_str))
+            for maze, cell in imper_gen:
+                self._maze = maze
+                yield maze, cell
+        self.save_current_maze()
+        self.save_solution()
+
     def get_solving_steps(
             self
-    ) -> Generator[Tuple[np.ndarray, Tuple[int, int]]]:
+    ) -> Generator[Tuple[int, int], None, None]:
         """
-        Phase 2: Animation of dead-ends being filled.
+        Phase 2: Animation of solving.
         """
         if self._maze is None:
             self._maze = self.generator.generate()
 
-        solve_gen = self.generator.solve_deadends_steps()
-        for solved_grid, cell in solve_gen:
-            self._solved_maze = solved_grid
-            yield solved_grid, cell
-
-    def get_imperfection_steps(
-            self
-    ) -> Generator[Tuple[np.ndarray, Tuple[int, int]]]:
-        """
-        Phase 3 : Animation of loops being added.
-        """
-        if self.config.perfect:
-            return
-
-        if self._solved_maze is None:
-            self._solved_maze = self.generator.solve_deadends()
-
-        # Calculate solution length needed for the logic
-        sol_str = self.file_manager.resolve_to_string(self._solved_maze,
-                                                      self.generator)
-
-        imperfection_gen = self.generator.add_paths_steps(self._solved_maze,
-                                                          len(sol_str))
-        for maze, cell in imperfection_gen:
-            self._maze = maze
-            yield maze, cell
-
-    def get_pathfinding_steps(
-        self,
-        use_optimized_maze: bool = False
-    ) -> Generator[Tuple[np.ndarray, Tuple[int, int]]]:
-        """
-        Phase 4: BFS Exploration.
-
-        Args:
-            use_optimized_maze:
-                If True, runs BFS on the 'solved' grid (dead-ends filled).
-                If False, runs BFS on the raw maze (exploring all dead-ends).
-        """
-        # 1. Ensure the maze is fully generated first
-        if self._maze is None:
-            self._maze = self.generator.generate()
-
-            if not self.config.perfect:
-                temp_solved = self.generator.solve_deadends()
-                sol_str = self.file_manager.resolve_to_string(
-                    temp_solved, self.generator
-                )
-                self._maze = self.generator.add_paths(
-                    temp_solved, len(sol_str)
-                )
-
-        # 2. Select the grid to run BFS on
-        if use_optimized_maze:
-            # Check if we have a solved version ready
-            if self._solved_maze is None:
-                # Assuming simple solve (fill deadends) without BFS,
-                # or re-running dead-end filling on the current maze structure
-                self._solved_maze = self.generator.solve_deadends()
-
-            target_grid = self._solved_maze
+        if self.config.perfect is False:
+            solve_gen = self.generator.bfs_steps(self._maze)
         else:
-            target_grid = self._maze
-
-        # 3. Run Generator
-        return self.generator.bfs_steps(target_grid)
+            solve_gen = self.generator.solve_deadends_steps()
+        for _, cell in solve_gen:
+            yield cell

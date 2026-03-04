@@ -138,8 +138,10 @@ class MazeGenerator:
             count += 1
         return count
 
-    def close_deadend(self, maze: np.ndarray[Any, Any],
-                      row: int, col: int) -> None:
+    def close_deadend(
+            self, maze: np.ndarray[Any, Any],
+            row: int, col: int
+    ) -> Generator[Tuple[np.ndarray, Tuple[int, int]], None, None]:
         """Fill a deadend by adding a wall to the only open side"""
         next_cell = (row, col)
         while (
@@ -173,10 +175,11 @@ class MazeGenerator:
                 if col > 0:
                     maze[row, col - 1] |= self.RIGHT
                     next_cell = (row, col - 1)
+            yield maze, (row, col)
 
     def solve_deadends_steps(
         self
-    ) -> Generator[Tuple[np.ndarray, Tuple[int, int]]]:
+    ) -> Generator[Tuple[np.ndarray, Tuple[int, int]], None, None]:
         """
         Removes dead ends to find the solution.
         """
@@ -191,7 +194,8 @@ class MazeGenerator:
                     if ((row, col) != self.entry and
                             (row, col) != self.exit and
                             self.count_walls(row, col, maze) == 3):
-                        self.close_deadend(maze, row, col)
+                        for maze, cell in self.close_deadend(maze, row, col):
+                            yield maze, cell
                         found_deadend = True
 
                         yield maze, (row, col)
