@@ -26,7 +26,7 @@ class MazeGenerator:
             seed(config.seed)
 
     def initialize_maze_grid(self) -> None:
-        self.maze = np.full((self.height, self.width), 15, dtype=np.uint8)
+        self.maze = np.full((self.height, self.width), 0xF, dtype=np.uint8)
 
     def initialize_visited(self) -> None:
         self.visited = np.zeros((self.height, self.width), dtype=bool)
