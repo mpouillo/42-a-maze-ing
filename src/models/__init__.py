@@ -1,4 +1,4 @@
-from .maze_model import MazeModel
+from .maze import MazeModel
 
 __all__ = [
     "MazeModel"

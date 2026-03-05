@@ -12,7 +12,14 @@ class Button:
         self.height = height
         self.action = action
         self.hover = False
+        self.enabled = True
 
     def is_hovered(self, mouse_x: int, mouse_y: int) -> bool:
         return (self.x <= mouse_x <= self.x + self.width and
                 self.y <= mouse_y <= self.y + self.height)
+
+    def enable(self):
+        self.enabled = True
+
+    def disable(self):
+        self.enabled = False

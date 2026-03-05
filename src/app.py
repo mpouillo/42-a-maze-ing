@@ -1,6 +1,6 @@
 import os
 import time
-from mlx import Mlx
+from mlx import Mlx  # type: ignore
 from src.scenes import MenuScene
 from typing import Any
 
@@ -29,6 +29,7 @@ class Application:
         self.current_scene = MenuScene(self)
 
     def run(self):
+        self.mlx.mlx_do_key_autorepeatoff(self.mlx_ptr)
         self.mlx.mlx_hook(self.win_ptr, 2, 1 << 0, self.handle_keydown, None)
         self.mlx.mlx_hook(self.win_ptr, 3, 1 << 1, self.handle_keyup, None)
         self.mlx.mlx_hook(self.win_ptr, 33, 0, self.close_window, None)
@@ -56,12 +57,14 @@ class Application:
             return
 
         for button in self.current_scene.view.buttons.values():
-            if button.is_hovered(x, y):
+            if button.is_hovered(x, y) and button.enabled:
                 if button.action:
                     button.action()
                     return
 
     def close_window(self, param: Any = None) -> None:
+        self.mlx.mlx_do_key_autorepeaton(self.mlx_ptr)
+        self.mlx.mlx_do_sync(self.mlx_ptr)
         self.mlx.mlx_release(self.mlx_ptr)
         print("Exiting...")
         os._exit(0)

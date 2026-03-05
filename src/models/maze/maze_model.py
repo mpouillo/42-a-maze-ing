@@ -1,15 +1,20 @@
 import sys
 import os
 import numpy as np
-from typing import Union, Generator, Tuple, Optional
+from typing import Union, Generator, Tuple, Optional, TypeAlias
 
-from src.algo.maze_config import MazeConfig
-from src.algo.generation import MazeGenerator
-from src.algo.hex_generation import HexMazeGenerator
-from src.algo.file_manager import MazeFileManager
+from src.models.maze.maze_config import MazeConfig
+from src.models.maze.generation import MazeGenerator
+from src.models.maze.hex_generation import HexMazeGenerator
+from src.models.maze.file_manager import MazeFileManager
+
+StepList: TypeAlias = list[dict[tuple[int, int], int]]
+StepGenerator: TypeAlias = Generator[
+    Tuple[np.ndarray, Tuple[int, int]], None, None
+]
 
 
-class MazeController:
+class MazeModel:
     """
     Main controller for Maze Generation.
     Acts as a bridge between the Algorithm and the Display/File System.
@@ -31,15 +36,35 @@ class MazeController:
         else:
             self.generator = MazeGenerator(self.config)
 
-        self._maze: Optional[np.ndarray] = None
-        self._solved_maze: Optional[np.ndarray] = None
+        self.maze: Optional[np.ndarray] = np.full(
+            (self.config.height, self.config.width), 0xF, dtype=np.uint8
+        )
+        self.solved_maze: Optional[np.ndarray] = None
+
+        # List de dict, avec à chaque fois la cellule regardée et les 4
+        # adjacentes sous la forne {(x, y): 0xZ, (x, y): 0xZ...}
+        self.gen_steps: StepList | None = []
+        self.solve_steps: StepList | None = []
+
+        # Liste de la même chose, mais en vrai tu peux mettre que la cellule
+        # de chaque étape ici vu que ca se suit forcément
+        self.valid_paths: list[StepList] | None = [[]]
 
     # FILE OPERATIONS
 
+    def generate_new_maze(self) -> None:
+        # Generate a maze and save it to self.maze
+        # Save the generation steps to self.gen_steps
+        # Solve the maze and save it to self.solved_maze
+        # Save the solving steps to self.solve_steps
+        # Save the paths found to self.valid_paths
+        # Save the data to file
+        return
+
     def save_current_maze(self) -> None:
         """Saves the current state of the maze to the output file."""
-        if self._maze is not None:
-            self.file_manager.write_maze(self.output_file, self._maze)
+        if self.maze is not None:
+            self.file_manager.write_maze(self.output_file, self.maze)
 
     def save_solution(self,
                       path: Optional[list[Tuple[int, int]]] = None) -> None:
@@ -55,19 +80,19 @@ class MazeController:
         """
         Calcule la solution finale
         """
-        if self._maze is None:
-            self._maze = self.generator.generate()
+        if self.maze is None:
+            self.maze = self.generator.generate()
 
             if not self.config.perfect:
-                self._solved_maze = self.generator.solve_deadends()
+                self.solved_maze = self.generator.solve_deadends()
                 sol_str = self.file_manager.resolve_to_string(
-                   self._solved_maze, self.generator
+                   self.solved_maze, self.generator
                 )
-                self._maze = self.generator.add_paths(
-                   self._solved_maze, len(sol_str)
+                self.maze = self.generator.add_paths(
+                   self.solved_maze, len(sol_str)
                 )
 
-        path = self.generator.bfs(self._maze)
+        path = self.generator.bfs(self.maze)
         return path
 
     #  VISUALIZATION
@@ -79,24 +104,24 @@ class MazeController:
 
     def get_generation_steps(
             self
-    ) -> Generator[Tuple[np.ndarray, Tuple[int, int]], None, None]:
+    ) -> StepGenerator:
         """
         Phase 1: Animation of walls being broken.
         """
         step_gen = self.generator.generate_steps()
         for maze, cell in step_gen:
-            self._maze = maze
+            self.maze = maze
             yield maze, cell
 
         if self.config.perfect is False:
-            self._solved_maze = self.generator.solve_deadends()
-            sol_str = self.file_manager.resolve_to_string(self._solved_maze,
+            self.solved_maze = self.generator.solve_deadends()
+            sol_str = self.file_manager.resolve_to_string(self.solved_maze,
                                                           self.generator)
 
-            imper_gen = self.generator.add_paths_steps(self._solved_maze,
+            imper_gen = self.generator.add_paths_steps(self.solved_maze,
                                                        len(sol_str))
             for maze, cell in imper_gen:
-                self._maze = maze
+                self.maze = maze
                 yield maze, cell
         self.save_current_maze()
         self.save_solution()
@@ -107,11 +132,11 @@ class MazeController:
         """
         Phase 2: Animation of solving.
         """
-        if self._maze is None:
-            self._maze = self.generator.generate()
+        if self.maze is None:
+            self.maze = self.generator.generate()
 
         if self.config.perfect is False:
-            solve_gen = self.generator.bfs_steps(self._maze)
+            solve_gen = self.generator.bfs_steps(self.maze)
         else:
             solve_gen = self.generator.solve_deadends_steps()
         for _, cell in solve_gen:

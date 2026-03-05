@@ -12,8 +12,8 @@ class MenuScene(BaseScene):
         self.view.clear_buttons()
 
         btn_data = [
-            ["display", "Display", self.start_display],
-            ["play", "Play", self.start_game]
+            ["display", "Display", self._cmd_start_display],
+            ["play", "Play", self._cmd_start_game]
         ]
 
         btn_width = self.view.ui_style.get("btn_width", 0)
@@ -28,19 +28,19 @@ class MenuScene(BaseScene):
                 btn_width, btn_height, b[2]
             )
 
-    def start_display(self):
+    def _cmd_start_display(self):
         from src.scenes import DisplayScene
         self.view.clear_buttons()
         self.app.current_scene = DisplayScene(self.app)
 
-    def start_game(self):
+    def _cmd_start_game(self):
         from src.scenes import GameScene
         self.view.clear_buttons()
         self.app.current_scene = GameScene(self.app)
 
     def update(self):
-        self.view.render_ui()
+        self.view.draw_ui()
         super().update()
 
     def render(self):
-        self.view.refresh()
+        self.view.refresh_layers()

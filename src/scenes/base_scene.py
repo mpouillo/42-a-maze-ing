@@ -4,7 +4,7 @@ class BaseScene:
         self.model = None
         self.view = None
 
-    def open_menu(self):
+    def _cmd_open_menu(self):
         from src.scenes import MenuScene
         self.app.current_scene = MenuScene(self.app)
 

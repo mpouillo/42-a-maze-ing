@@ -1,21 +1,19 @@
 from typing import Any
-from mlx import Mlx
 
 
 class Canvas:
-    def __init__(self, mlx: Mlx, mlx_ptr: Any, x: int, y: int,
+    def __init__(self, app: Any, x: int, y: int,
                  z: int, width: int, height: int) -> None:
-        self.mlx = mlx
-        self.mlx_ptr = mlx_ptr
+        self.app = app
         self.x = x
         self.y = y
         self.z = z
         self.width = width
         self.height = height
 
-        self.ptr = self.mlx.mlx_new_image(mlx_ptr, width, height)
+        self.ptr = self.app.mlx.mlx_new_image(self.app.mlx_ptr, width, height)
         self.addr, self.bpp, self.size_line, self.endian = (
-            self.mlx.mlx_get_data_addr(self.ptr)
+            self.app.mlx.mlx_get_data_addr(self.ptr)
         )
         self.buffer = memoryview(self.addr)
         self.bytes_per_pixel = self.bpp // 8
@@ -52,5 +50,5 @@ class Canvas:
 
     def destroy(self):
         if self.ptr:
-            self.mlx.mlx_destroy_image(self.mlx_ptr, self.ptr)
+            self.app.mlx.mlx_destroy_image(self.app.mlx_ptr, self.ptr)
             self.ptr = None

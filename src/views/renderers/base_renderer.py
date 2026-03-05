@@ -1,6 +1,6 @@
 import os
 import sys
-from src.models.maze_model import MazeModel
+from src.models.maze import MazeModel
 from src.views.ui_components import Button
 from src.views.canvas import Canvas
 
@@ -22,13 +22,15 @@ class BaseRenderer:
 
         self.ui_style = {
             "btn_width": 300,
-            "btn_height": 50,
+            "btn_height": self.pad_h // 2,
             "btn_spacing": 50,
             "btn_bg": 0xFF333333,
             "btn_text": 0xFFFFFFFF,
             "btn_border": 0xFF555555,
-            "btn_hover": 0xFF00AAFF,
+            "btn_hover": 0xFFFFAAAA,
+            "btn_disabled": 0xFF404040,
             "btn_text": 0xFFFFFFFF,
+            "btn_text_disabled": 0xFF7F7F7F,
             "border_weight": 4,
             "font_scale": 3
         }
@@ -64,7 +66,7 @@ class BaseRenderer:
 
     def create_canvas(self, x: int, y: int, z: int,
                       width: int, height: int) -> Canvas:
-        return Canvas(self.app.mlx, self.app.mlx_ptr, x, y, z, width, height)
+        return Canvas(self.app, x, y, z, width, height)
 
     def clear_canvas(self):
         for layer in self.layers.values():
@@ -93,7 +95,7 @@ class BaseRenderer:
 
         return (alpha << 24) | (red << 16) | (green << 8) | blue
 
-    def render_ui(self):
+    def draw_ui(self):
         canvas = self.layers.get("ui")
         canvas.clear()
         for button in self.buttons.values():
@@ -115,8 +117,16 @@ class BaseRenderer:
     def draw_button(self, canvas: Canvas, btn: Button):
         theme = self.ui_style
         bw = theme.get("border_weight")
+
         bg_color = (
-            theme.get("btn_hover") if btn.hover else theme.get("btn_bg")
+            theme.get("btn_disabled") if not btn.enabled
+            else theme.get("btn_hover") if btn.hover
+            else theme.get("btn_bg")
+        )
+
+        text_color = (
+            theme.get("btn_text_disabled") if not btn.enabled
+            else theme.get("btn_text")
         )
 
         canvas.fill_rect(btn.x - bw, btn.y - bw, btn.width + bw * 2,
@@ -136,8 +146,9 @@ class BaseRenderer:
         text_x = btn.x + (btn.width - text_w) // 2
         text_y = btn.y + (btn.height - text_h) // 2
 
-        self.draw_text(canvas, text_x, text_y, btn.label,
-                       theme.get("btn_text"), font_scale)
+        self.draw_text(
+            canvas, text_x, text_y, btn.label, text_color, font_scale
+        )
 
     def draw_text(self, canvas: Canvas, start_x: int, start_y: int,
                   text: str, color: int, scale: int | None = None) -> None:
@@ -158,7 +169,7 @@ class BaseRenderer:
                             )
             char_offset += (self.font_width + 1) * font_scale
 
-    def refresh(self):
+    def refresh_layers(self):
         self.app.mlx.mlx_clear_window(self.app.mlx_ptr, self.app.win_ptr)
         for layer in self.layers.values():
             self.app.mlx.mlx_put_image_to_window(

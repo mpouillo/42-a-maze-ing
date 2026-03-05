@@ -1,27 +1,35 @@
 import random
-from src.models import MazeModel
+from src.models.maze import MazeModel
 from src.scenes import BaseScene
-from src.views.renderers import SquareRenderer
-from typing import Any
+from src.views.renderers import SquareRenderer, HexRenderer
 
 
 class DisplayScene(BaseScene):
     def __init__(self, app) -> None:
         super().__init__(app)
+
         self.model = MazeModel(self.app.config_file)
-        self.view = SquareRenderer(self.app, self.model)
+
+        if self.model.config.is_hex is True:
+            self.view = HexRenderer(self.app, self.model)
+        else:
+            self.view = SquareRenderer(self.app, self.model)
 
         self.solving = False
+        self.solve_step = 0
+        self.generating = False
+        self.gen_step = 0
+
         self.setup_ui()
+        self.model.generate_new_maze()
 
     def setup_ui(self):
         self.view.clear_buttons()
 
         btn_data = [
-            ["regen", "Regenerate", self.regen_maze],
-            ["solve", "Play", self.toggle_solve],
-            ["colors", "Random colors", self.random_colors],
-            ["skip", "Skip", self.skip_solve]
+            ["regen", "Generate", self._cmd_generate_maze],
+            ["solve", "Solve", self._cmd_solve_maze],
+            ["colors", "Random colors", self._cmd_random_colors],
         ]
 
         btn_width = min(self.view.ui_style.get("btn_width", 0),
@@ -42,63 +50,77 @@ class DisplayScene(BaseScene):
             "menu", "Menu",
             self.app.window_width - (self.view.pad_w + btn_width),
             self.app.window_height - (self.view.pad_h + btn_height) // 2,
-            9999, btn_width, btn_height, self.open_menu
+            9999, btn_width, btn_height, self._cmd_open_menu
         )
 
-    def regen_maze(self):
+    def _cmd_generate_maze(self):
         self.solving = False
-        self.setup_ui()
-        self.model.regenerate_maze()
-        self.view.refresh()
 
-    def toggle_solve(self):
-        self.solving = not self.solving
-        btn = self.view.buttons.get("solve")
+        if self.generating:
+            self.generating = False
+            self.view.buttons.get("regen").label = "Generate"
+            self.view.buttons.get("solve").enable()
+            self.gen_step = len(self.model.gen_steps)
+        else:
+            self.model.generate_new_maze()
+            self.view.buttons.get("regen").label = "Skip"
+            self.view.buttons.get("solve").disable()
+            self.gen_step = 0
+            self.generating = True
+
+        self.render("ui")
+
+    def _cmd_solve_maze(self):
+        if self.generating or not self.model.path:
+            return
 
         if self.solving:
-            if self.model.path_step >= len(self.model.path):
-                self.model.path_step = 0
-                self.view.layers.get("path").clear()
-                self.view.refresh()
-            btn.label = "Pause"
-            self.view.buttons.get("skip").label = "Skip"
+            self.solving = False
+            self.view.buttons.get("solve").label = "Solve"
+            self.solve_step = len(self.model.solve_steps)
         else:
-            btn.label = "Play"
-        self.view.refresh()
+            self.view.buttons.get("solve").label = "Skip"
+            self.solve_step = 0
+            self.solving = True
 
-    def skip_solve(self):
-        btn = self.view.buttons.get("skip")
-        if self.model.path_step >= len(self.model.path):
-            self.model.path_step = self.model.path_prev
-            btn.label = "Skip"
-        else:
-            self.model.path_prev = self.model.path_step
-            self.model.path_step = len(self.model.path)
-            btn.label = "Undo"
-        self.view.refresh()
+        self.render("ui")
 
-        if self.solving:
-            self.toggle_solve()
-
-    def random_colors(self):
+    def _cmd_random_colors(self):
         for color in self.view.colors:
             self.view.colors[color] = random.randrange(0xFF000000, 0xFFFFFFFF)
-        self.view.refresh()
+        self.render("maze", "path")
 
-    def update(self, param: Any = None) -> None:
-        if self.solving is True:
-            if self.model.path_step == len(self.model.path):
-                self.solving = False
-                self.model.path_prev = len(self.model.path)
-                self.setup_ui()  # Reset UI to remove "Pause" label
-
+    def update(self) -> None:
+        if self.generating is True:
+            if self.gen_step >= len(self.model.gen_steps):
+                self.generating = False
+                self.gen_step = 0
             else:
-                self.model.path_step += 1
+                self.gen_step += 1
+                self.view.draw_step(self.model.gen_steps[self.gen_step],
+                                    self.view.colors.get("gen"))
+
+        if self.solving is True:
+            if self.solve_step >= len(self.model.solve_steps):
+                self.solving = False
+                self.solve_step = 0
+            else:
+                self.view.draw_step(self.model.solve_steps[self.solve_step])
+                self.solve_step += 1
 
         super().update()
 
-    def render(self):
-        self.view.render_maze()
-        self.view.render_path()
-        self.view.render_ui()
-        self.view.refresh()
+    def render(self, *args):
+        if args:
+            if "maze" in args:
+                self.view.draw_maze()
+            if "path" in args:
+                self.view.draw_path()
+            if "ui" in args:
+                self.view.draw_ui()
+            self.view.refresh_layers()
+            return
+
+        self.view.draw_maze()
+        self.view.draw_ui()
+        self.view.refresh_layers()

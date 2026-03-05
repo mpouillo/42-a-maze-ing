@@ -1,4 +1,4 @@
-from src.models import MazeModel
+from src.models.maze import MazeModel
 from src.scenes import BaseScene
 from src.views.renderers import SquareRenderer
 
@@ -6,6 +6,7 @@ from src.views.renderers import SquareRenderer
 class GameScene(BaseScene):
     def __init__(self, app) -> None:
         super().__init__(app)
+
         self.model = MazeModel(self.app.config_file)
         self.view = SquareRenderer(self.app, self.model)
 
@@ -13,12 +14,7 @@ class GameScene(BaseScene):
         self.pos_y = 0
 
         self.setup_ui()
-        self.view.layers.update({
-            "character": self.view.create_canvas(
-                self.view.offset_x, self.view.offset_y,
-                0, self.view.maze_w, self.view.maze_h
-            )
-        })
+        self.view.draw_maze()
 
     def setup_ui(self):
         self.view.clear_buttons()
@@ -51,23 +47,23 @@ class GameScene(BaseScene):
     def reset_game(self):
         self.pos_x = 0
         self.pos_y = 0
-        self.view.refresh()
+        self.model.reset_maze()
+        self.view.refresh_layers()
 
-    def render_char(self):
+    def draw_character(self):
         node = self.view.node_size
         wall = self.view.wall_size
         color = self.view.colors.get("character")
-        canvas = self.view.layers.get("character")
 
+        canvas = self.view.layers.get("path")
         canvas.clear()
         canvas.fill_rect(self.pos_x * node + wall, self.pos_y * node + wall,
                          node - wall, node - wall, color)
 
     def end_game(self):
         import time
-        canvas = self.view.create_canvas(0, 0, 9999, self.app.window_width,
-                                         self.app.window_height)
-        self.view.layers.update({"popup": canvas})
+        canvas = self.view.layers.get("path")
+        canvas.clear()
         canvas.fill_rect(0, 0, self.app.window_width,
                          self.app.window_height, 0xFF000000)
 
@@ -83,41 +79,40 @@ class GameScene(BaseScene):
         self.view.draw_text(canvas, text_x, text_y, text,
                             0xFFFFFFFF, font_scale)
 
-        self.view.refresh()
+        self.view.refresh_layers()
         self.app.mlx.mlx_do_sync(self.app.mlx_ptr)
 
         time.sleep(3)
 
-        self.view.layers.pop("popup")
-        self.model.maze.maze_gen.height += 1
-        self.model.maze.maze_gen.width += 1
+        canvas.clear()
+        self.model.maze_controller.config.height += 1
+        self.model.maze_controller.config.width += 1
         self.reset_game()
 
     def render(self):
-        self.view.render_maze()
+        self.view.draw_maze()
         self.view.draw_endpoints()
-        self.render_char()
-        self.view.render_ui()
-        self.view.refresh()
+        self.draw_character()
+        self.view.draw_ui()
+        self.view.refresh_layers()
 
     def update(self) -> None:
         # Move character
-        cur_cell = self.model.grid[self.pos_y][self.pos_x]
+        cur_cell = self.model.maze[self.pos_y][self.pos_x]
         if 65361 in self.app.keypresses and not cur_cell & 8:   # Left
             self.pos_x -= 1
-        cur_cell = self.model.grid[self.pos_y][self.pos_x]
+        cur_cell = self.model.maze[self.pos_y][self.pos_x]
         if 65362 in self.app.keypresses and not cur_cell & 1:   # Up
             self.pos_y -= 1
-        cur_cell = self.model.grid[self.pos_y][self.pos_x]
+        cur_cell = self.model.maze[self.pos_y][self.pos_x]
         if 65364 in self.app.keypresses and not cur_cell & 4:   # Down
             self.pos_y += 1
-        cur_cell = self.model.grid[self.pos_y][self.pos_x]
+        cur_cell = self.model.maze[self.pos_y][self.pos_x]
         if 65363 in self.app.keypresses and not cur_cell & 2:   # Right
             self.pos_x += 1
 
         # Exit reached
         if (self.pos_y, self.pos_x) == self.model.exit:
-            self.view.refresh()
             self.end_game()
             return
 
