@@ -43,22 +43,19 @@ class MazeModel:
 
         # List de dict, avec à chaque fois la cellule regardée et les 4
         # adjacentes sous la forne {(x, y): 0xZ, (x, y): 0xZ...}
-        self.gen_steps: StepList | None = []
-        self.solve_steps: StepList | None = []
+        self.gen_steps = []
+        self.solve_steps = []
 
         # Liste de la même chose, mais en vrai tu peux mettre que la cellule
         # de chaque étape ici vu que ca se suit forcément
-        self.valid_paths: list[StepList] | None = [[]]
+        self.valid_paths = []
 
     # FILE OPERATIONS
 
     def generate_new_maze(self) -> None:
-        # Generate a maze and save it to self.maze
-        # Save the generation steps to self.gen_steps
-        # Solve the maze and save it to self.solved_maze
-        # Save the solving steps to self.solve_steps
-        # Save the paths found to self.valid_paths
-        # Save the data to file
+        self.gen_steps = list(self.get_generation_steps())
+        self.save_current_maze()
+        self.solve_steps = list(self.get_solving_steps())
         return
 
     def save_current_maze(self) -> None:
@@ -93,6 +90,7 @@ class MazeModel:
                 )
 
         path = self.generator.bfs(self.maze)
+        self.valid_paths.append(path)
         return path
 
     #  VISUALIZATION
@@ -104,7 +102,7 @@ class MazeModel:
 
     def get_generation_steps(
             self
-    ) -> StepGenerator:
+    ):
         """
         Phase 1: Animation of walls being broken.
         """
@@ -122,8 +120,8 @@ class MazeModel:
                                                        len(sol_str))
             for maze, cell in imper_gen:
                 self.maze = maze
-                yield maze, cell
-        self.save_current_maze()
+                yield cell
+
         self.save_solution()
 
     def get_solving_steps(
