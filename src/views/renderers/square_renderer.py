@@ -77,7 +77,7 @@ class SquareRenderer(BaseRenderer):
         canvas = self.layers.get("path")
         self.draw_cell_square(canvas, self.colors.get("entry"),
                               self.model.config.entry[1],
-                              self.config.model.entry[0])
+                              self.model.config.entry[0])
         self.draw_cell_square(canvas, self.colors.get("exit"),
                               self.model.config.exit[1],
                               self.model.config.exit[0])

@@ -2,6 +2,7 @@ import random
 from src.models.maze import MazeModel
 from src.scenes import BaseScene
 from src.views.renderers import SquareRenderer, HexRenderer
+import numpy as np
 
 
 class DisplayScene(BaseScene):
@@ -10,10 +11,10 @@ class DisplayScene(BaseScene):
 
         self.model = MazeModel(self.app.config_file)
 
-        if self.model.config.is_hex is True:
-            self.view = HexRenderer(self.app, self.model)
-        else:
-            self.view = SquareRenderer(self.app, self.model)
+        # if self.model.config.is_hex is True:
+        #    self.view = HexRenderer(self.app, self.model)
+        # else:
+        self.view = SquareRenderer(self.app, self.model)
 
         self.solving = False
         self.solve_step = 0
@@ -58,15 +59,22 @@ class DisplayScene(BaseScene):
 
         if self.generating:
             self.generating = False
+            self.model.maze = self.model.final_maze.copy()
+            self.view.layers.get("path").clear()
             self.view.draw_maze()
+            self.view.draw_endpoints()
             self.view.buttons.get("regen").label = "Generate"
             self.view.buttons.get("solve").enable()
             self.gen_step = len(self.model.gen_steps)
         else:
-            self.model.generator.initialize_maze_grid()
-            self.view.draw_maze()
-            self.render("maze")
             self.model.generate_new_maze()
+            self.model.final_maze = self.model.maze.copy()
+            self.model.maze = np.full(
+                (self.model.config.height, self.model.config.width),
+                0xF, dtype=np.uint8
+            )
+            self.view.draw_maze()
+            self.view.layers.get("path").clear()
             self.view.buttons.get("regen").label = "Skip"
             self.view.buttons.get("solve").disable()
             self.gen_step = 0
@@ -75,7 +83,7 @@ class DisplayScene(BaseScene):
         self.render("ui")
 
     def _cmd_solve_maze(self):
-        if self.generating or not self.model.path:
+        if self.generating or not self.model:
             return
 
         if self.solving:
@@ -99,17 +107,26 @@ class DisplayScene(BaseScene):
             if self.gen_step >= len(self.model.gen_steps):
                 self.generating = False
                 self.gen_step = 0
+                self.model.maze = self.model.final_maze.copy()
+                self.view.layers.get("path").clear()
+                self.view.draw_maze()
+                self.view.draw_endpoints()
+                self.view.buttons.get("regen").label = "Generate"
+                self.view.buttons.get("solve").enable()
+                self.render("ui")
             else:
+                self.view.draw_step(
+                    self.model.gen_steps[self.gen_step],
+                    self.view.colors.get("gen")
+                )
                 self.gen_step += 1
-                self.view.draw_step(self.model.gen_steps[self.gen_step],
-                                    0xFF000000)
 
-        if self.solving is True:
+        elif self.solving is True:
             if self.solve_step >= len(self.model.solve_steps):
                 self.solving = False
                 self.solve_step = 0
             else:
-                if self.solve_step > 1:
+                if self.solve_step > 0:
                     self.view.draw_step(
                         self.model.solve_steps[self.solve_step - 1],
                         self.view.colors.get("gen") & 0x7FFFFFFF

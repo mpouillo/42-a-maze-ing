@@ -53,10 +53,18 @@ class MazeModel:
     # FILE OPERATIONS
 
     def generate_new_maze(self) -> None:
+        self.maze = np.full(
+            (self.config.height, self.config.width), 0xF, dtype=np.uint8
+        )
+
         self.gen_steps = list(self.get_generation_steps())
         self.save_current_maze()
         self.solve_steps = list(self.get_solving_steps())
-        return
+
+        self.final_maze = self.maze.copy()
+        self.maze = np.full(
+            (self.config.height, self.config.width), 0xF, dtype=np.uint8
+        )
 
     def save_current_maze(self) -> None:
         """Saves the current state of the maze to the output file."""
