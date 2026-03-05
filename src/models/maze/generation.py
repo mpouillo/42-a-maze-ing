@@ -38,7 +38,7 @@ class MazeGenerator:
 
     def set_logo_as_visited(self) -> None:
         """Mark logo area as visited so the maze generates around it"""
-        with open("src/algo/logo.txt", "r") as f:
+        with open("src/models/maze/logo.txt", "r") as f:
             logo = f.read()
 
         logo_rows = list(logo.strip().split('\n'))

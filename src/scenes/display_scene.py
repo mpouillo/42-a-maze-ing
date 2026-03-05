@@ -21,7 +21,7 @@ class DisplayScene(BaseScene):
         self.gen_step = 0
 
         self.setup_ui()
-        self.model.generate_new_maze()
+        self.view.draw_maze()
 
     def setup_ui(self):
         self.view.clear_buttons()
@@ -58,10 +58,14 @@ class DisplayScene(BaseScene):
 
         if self.generating:
             self.generating = False
+            self.view.draw_maze()
             self.view.buttons.get("regen").label = "Generate"
             self.view.buttons.get("solve").enable()
             self.gen_step = len(self.model.gen_steps)
         else:
+            self.model.generator.initialize_maze_grid()
+            self.view.draw_maze()
+            self.render("maze")
             self.model.generate_new_maze()
             self.view.buttons.get("regen").label = "Skip"
             self.view.buttons.get("solve").disable()
@@ -98,14 +102,20 @@ class DisplayScene(BaseScene):
             else:
                 self.gen_step += 1
                 self.view.draw_step(self.model.gen_steps[self.gen_step],
-                                    self.view.colors.get("gen"))
+                                    0xFF000000)
 
         if self.solving is True:
             if self.solve_step >= len(self.model.solve_steps):
                 self.solving = False
                 self.solve_step = 0
             else:
-                self.view.draw_step(self.model.solve_steps[self.solve_step])
+                if self.solve_step > 1:
+                    self.view.draw_step(
+                        self.model.solve_steps[self.solve_step - 1],
+                        self.view.colors.get("gen") & 0x7FFFFFFF
+                    )
+                self.view.draw_step(self.model.solve_steps[self.solve_step],
+                                    self.view.colors.get("gen"))
                 self.solve_step += 1
 
         super().update()
@@ -121,6 +131,5 @@ class DisplayScene(BaseScene):
             self.view.refresh_layers()
             return
 
-        self.view.draw_maze()
         self.view.draw_ui()
         self.view.refresh_layers()

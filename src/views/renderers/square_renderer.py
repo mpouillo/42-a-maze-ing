@@ -68,10 +68,10 @@ class SquareRenderer(BaseRenderer):
         maze_entry = self.model.config.entry
         maze_exit = self.model.config.exit
 
-        for i, (y, x), value in enumerate(step_data):
-            self.draw_cell_walls(canvas, color, x, y, value)
-            if i == 0 and (y, x) not in [maze_entry, maze_exit]:
-                self.draw_cell_square(canvas, color, x, y)
+        (y, x), value = step_data
+        self.draw_cell_walls(canvas, color, x, y, value ^ 0xF)
+        if (y, x) not in [maze_entry, maze_exit]:
+            self.draw_cell_square(canvas, color, x, y)
 
     def draw_endpoints(self):
         canvas = self.layers.get("path")

@@ -55,7 +55,7 @@ class HexMazeGenerator:
     def apply_logo(self) -> None:
         """Mark logo area as visited so the maze generates around it"""
         try:
-            with open("src/algo/logo.txt", "r") as f:
+            with open("src/models/maze/logo.txt", "r") as f:
                 logo = f.read()
         except FileNotFoundError:
             return
