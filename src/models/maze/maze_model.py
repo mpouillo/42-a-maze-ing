@@ -109,7 +109,7 @@ class MazeModel:
         step_gen = self.generator.generate_steps()
         for maze, cell in step_gen:
             self.maze = maze
-            yield maze, cell
+            yield cell
 
         if self.config.perfect is False:
             self.solved_maze = self.generator.solve_deadends()
