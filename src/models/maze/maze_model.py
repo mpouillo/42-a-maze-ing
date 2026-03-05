@@ -109,7 +109,7 @@ class MazeModel:
         step_gen = self.generator.generate_steps()
         for maze, cell in step_gen:
             self.maze = maze
-            yield cell
+            yield cell, maze[cell]
 
         if self.config.perfect is False:
             self.solved_maze = self.generator.solve_deadends()
@@ -120,13 +120,13 @@ class MazeModel:
                                                        len(sol_str))
             for maze, cell in imper_gen:
                 self.maze = maze
-                yield cell
+                yield cell, maze[cell]
 
         self.save_solution()
 
     def get_solving_steps(
             self
-    ) -> Generator[Tuple[int, int], None, None]:
+    ):
         """
         Phase 2: Animation of solving.
         """
@@ -137,5 +137,5 @@ class MazeModel:
             solve_gen = self.generator.bfs_steps(self.maze)
         else:
             solve_gen = self.generator.solve_deadends_steps()
-        for _, cell in solve_gen:
-            yield cell
+        for maze, cell in solve_gen:
+            yield cell, maze[cell]
