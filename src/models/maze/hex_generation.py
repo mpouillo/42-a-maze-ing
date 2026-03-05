@@ -26,7 +26,6 @@ class HexMazeGenerator:
         if config.seed is not None:
             seed(config.seed)
 
-        # Pre-compute neighbor offsets and masks for cleaner logic
         # format: (dr, dc): (current_mask, neighbor_mask)
         self._even_neighbors = {
             (-1, 0): (self.TOP_RIGHT, self.BOTTOM_LEFT),
@@ -80,7 +79,6 @@ class HexMazeGenerator:
         r, c = cell
         neighbors = []
 
-        # Select offset map based on row parity
         offsets = self._even_neighbors if r % 2 == 0 else self._odd_neighbors
 
         for dr, dc in offsets.keys():
