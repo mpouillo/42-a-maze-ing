@@ -41,83 +41,26 @@ class MazeModel:
         )
         self.solved_maze: Optional[np.ndarray] = None
 
-        # List de dict, avec à chaque fois la cellule regardée et les 4
-        # adjacentes sous la forne {(x, y): 0xZ, (x, y): 0xZ...}
         self.gen_steps = []
         self.solve_steps = []
 
-        # Liste de la même chose, mais en vrai tu peux mettre que la cellule
-        # de chaque étape ici vu que ca se suit forcément
         self.valid_paths = []
 
     # FILE OPERATIONS
 
     def generate_new_maze(self) -> None:
-        self.maze = np.full(
-            (self.config.height, self.config.width), 0xF, dtype=np.uint8
-        )
-
         self.gen_steps = list(self.get_generation_steps())
         self.save_current_maze()
-        self.solve_steps = list(self.get_solving_steps())
 
-        self.final_maze = self.maze.copy()
-        self.maze = np.full(
-            (self.config.height, self.config.width), 0xF, dtype=np.uint8
-        )
+        self.solve_steps = list(self.generator.bfs())
+        self.valid_paths = self.generator.bfs_paths
+        self.save_solution(self.valid_paths[0])
 
-    def save_current_maze(self) -> None:
-        """Saves the current state of the maze to the output file."""
-        if self.maze is not None:
-            self.file_manager.write_maze(self.output_file, self.maze)
-
-    def save_solution(self,
-                      path: Optional[list[Tuple[int, int]]] = None) -> None:
-        """Saves the solution string to the output file."""
-
-        if path is None:
-            path = self.solve_maze()
-
-        bfs_str = self.file_manager.path_to_string(path)
-        self.file_manager.append_solution(self.output_file, bfs_str)
-
-    def solve_maze(self) -> Optional[list[Tuple[int, int]]]:
-        """
-        Calcule la solution finale
-        """
-        if self.maze is None:
-            self.maze = self.generator.generate()
-
-            if not self.config.perfect:
-                self.solved_maze = self.generator.solve_deadends()
-                sol_str = self.file_manager.resolve_to_string(
-                   self.solved_maze, self.generator
-                )
-                self.maze = self.generator.add_paths(
-                   self.solved_maze, len(sol_str)
-                )
-
-        path = self.generator.bfs(self.maze)
-        self.valid_paths.append(path)
-        return path
-
-    #  VISUALIZATION
-
-    def verify_config(self) -> None:
-        print(f"Loaded {self.config.height}x{self.config.width} Maze")
-        print(f"Mode: {'HEX' if self.config.is_hex else 'RECT'}")
-        print(f"Perfect: {self.config.perfect}")
-
-    def get_generation_steps(
-            self
-    ):
-        """
-        Phase 1: Animation of walls being broken.
-        """
+    def get_generation_steps(self):
         step_gen = self.generator.generate_steps()
-        for maze, cell in step_gen:
+        for maze, info in step_gen:
             self.maze = maze
-            yield cell, maze[cell]
+            yield info
 
         if self.config.perfect is False:
             self.solved_maze = self.generator.solve_deadends()
@@ -126,24 +69,15 @@ class MazeModel:
 
             imper_gen = self.generator.add_paths_steps(self.solved_maze,
                                                        len(sol_str))
-            for maze, cell in imper_gen:
+            for maze, info in imper_gen:
                 self.maze = maze
-                yield cell, maze[cell]
+                yield info
 
-        self.save_solution()
+    def save_current_maze(self) -> None:
+        self.file_manager.write_maze(self.output_file, self.maze)
 
-    def get_solving_steps(
-            self
-    ):
-        """
-        Phase 2: Animation of solving.
-        """
-        if self.maze is None:
-            self.maze = self.generator.generate()
+    def save_solution(self,
+                      path: Optional[list[Tuple[int, int]]] = None) -> None:
 
-        if self.config.perfect is False:
-            solve_gen = self.generator.bfs_steps(self.maze)
-        else:
-            solve_gen = self.generator.solve_deadends_steps()
-        for maze, cell in solve_gen:
-            yield cell, maze[cell]
+        bfs_str = self.file_manager.path_to_string(path)
+        self.file_manager.append_solution(self.output_file, bfs_str)

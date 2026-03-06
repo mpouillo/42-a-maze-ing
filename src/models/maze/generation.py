@@ -106,8 +106,6 @@ class MazeGenerator:
         self.visited[self.entry] = True
         stack: List[Tuple[int, int]] = [self.entry]
 
-        yield self.maze, self.entry
-
         while stack:
             curr_cell = stack.pop()
             neighbors = self.get_unvisited_neighbors(curr_cell)
@@ -121,7 +119,7 @@ class MazeGenerator:
 
                 stack.append(next_cell)
 
-                yield self.maze, next_cell
+                yield self.maze, ("remove", curr_cell, next_cell)
 
     def generate(self) -> np.ndarray[Any, Any]:
         for _ in self.generate_steps():
@@ -230,8 +228,6 @@ class MazeGenerator:
         next_pos: Tuple[int, int] = self.entry
         prev: Optional[Tuple[int, int]] = None
 
-        yield self.maze, (row, col)
-
         while (row, col) != self.exit:
             value: bool = (randint(0, 3) == 0)
             curr = (row, col)
@@ -249,8 +245,6 @@ class MazeGenerator:
             row, col = next_pos
             step += 1
 
-            yield self.maze, (row, col)
-
             if (value is True and added_path is False) or (
                 solve_size > 0
                 and step == int(solve_size / 2)
@@ -262,7 +256,7 @@ class MazeGenerator:
                     added_path = True
                     self.remove_wall(cell, blocked_cell)
                     number_path += 1
-                    yield self.maze, blocked_cell
+                    yield self.maze, ("remove", cell, blocked_cell)
             else:
                 added_path = False
 
@@ -305,95 +299,52 @@ class MazeGenerator:
 
         return candidates[randint(0, len(candidates) - 1)]
 
-    def get_neighbors_open(
-        self,
-        cell: Tuple[int, int],
-        solved: np.ndarray[Any, Any],
-    ) -> List[Tuple[int, int]]:
+    def get_neighbors_open(self, cell: Tuple[int, int]):
         r, c = cell
         neighbors: List[Tuple[int, int]] = []
 
-        if (solved[r, c] & self.TOP) == 0 and r > 0:
+        if (self.maze[r, c] & self.TOP) == 0 and r > 0:
             neighbors.append((r - 1, c))
-        if (solved[r, c] & self.RIGHT) == 0 and c < self.width - 1:
+        if (self.maze[r, c] & self.RIGHT) == 0 and c < self.width - 1:
             neighbors.append((r, c + 1))
-        if (solved[r, c] & self.BOTTOM) == 0 and r < self.height - 1:
+        if (self.maze[r, c] & self.BOTTOM) == 0 and r < self.height - 1:
             neighbors.append((r + 1, c))
-        if (solved[r, c] & self.LEFT) == 0 and c > 0:
+        if (self.maze[r, c] & self.LEFT) == 0 and c > 0:
             neighbors.append((r, c - 1))
 
         return neighbors
 
-    def bfs_steps(
-        self, solved: np.ndarray[Any, Any]
-    ) -> StepGenerator:
-        """
-        Yields the maze state at each step of the BFS exploration.
-        Allows visualizing the 'wave' of exploration.
-        """
+    def bfs(self, max_paths = None):
         self.initialize_visited()
         self.set_logo_as_visited()
 
-        q: Deque[Tuple[int, int]] = deque()
+        visited_global = self.visited.copy() 
+        self.bfs_paths = []
 
-        # Mark entry as visited and add to queue
-        self.visited[self.entry] = True
-        q.append(self.entry)
+        q = deque([self.entry])
 
-        # Yield initial state
-        yield self.maze, self.entry
-
-        while q:
-            curr = q.popleft()
-
-            # Yield the current cell being processed (popped from queue)
-            yield self.maze, curr
-
-            if curr == self.exit:
-                return
-
-            neighbors = self.get_neighbors_open(curr, solved)
-            for nxt in neighbors:
-                if not self.visited[nxt]:
-                    self.visited[nxt] = True
-                    q.append(nxt)
-                    yield self.maze, nxt
-
-    def bfs(self,
-            solved: np.ndarray[Any, Any]) -> Optional[List[Tuple[int, int]]]:
-        """
-        Standard BFS to find the shortest path from Entry to Exit.
-        Returns the path as a list of coordinates.
-        """
-        self.initialize_visited()
-        self.set_logo_as_visited()
-
-        q: Deque[Tuple[int, int]] = deque()
-        self.visited[self.entry] = True
-        q.append(self.entry)
-
-        # Dictionary to store the path: child -> parent
-        parent: Dict[Tuple[int, int], Optional[Tuple[int, int]]] = {
-            self.entry: None
-        }
+        parent = {self.entry: None}
 
         while q:
             curr = q.popleft()
 
             if curr == self.exit:
-                # Reconstruct path by backtracking from Exit to Entry
-                path: List[Tuple[int, int]] = []
-                node: Optional[Tuple[int, int]] = curr
-                while node is not None:
-                    path.append(node)
-                    node = parent[node]
-                path.reverse()
-                return path
+                path = []
+                temp = curr
+                while temp is not None:
+                    path.append(temp)
+                    temp = parent[temp]
 
-            for nxt in self.get_neighbors_open(curr, solved):
-                if not self.visited[nxt]:
-                    self.visited[nxt] = True
+                self.bfs_paths.append(path[::-1])
+
+                if max_paths is not None and len(self.bfs_paths) >= max_paths:
+                    return
+                continue
+
+            for nxt in self.get_neighbors_open(curr):
+                if not visited_global[nxt]:
+                    visited_global[nxt] = True
                     parent[nxt] = curr
                     q.append(nxt)
 
-        return None
+                    yield ("fill", curr, nxt)
