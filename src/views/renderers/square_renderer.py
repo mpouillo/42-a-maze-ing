@@ -48,59 +48,110 @@ class SquareRenderer(BaseRenderer):
         canvas = self.layers.get("maze")
         canvas.clear()
 
-        for y, row in enumerate(self.model.maze):
-            for x, value in enumerate(row):
-                self.draw_cell_walls(canvas, wall_color, x, y, value)
-                if value == 0xF:
-                    self.draw_cell_square(canvas, cell_color, x, y)
+        for y in range(self.model.config.height):
+            for x in range(self.model.config.width):
+                self.draw_cell_walls(canvas, x, y, 0xF, True, wall_color)
+                self.draw_cell_square(canvas, x, y, cell_color)
 
     def draw_path(self, path: list, color: int = None):
         color_start = self.colors.get("path_1")
         color_end = self.colors.get("path_2")
-        for i, step_data in enumerate(path):
-            cell_color = color if color else self.get_gradient_color(
-                color_start, color_end, i / max(1, len(path) - 1)
-            )
-            self.draw_step(step_data, cell_color)
+        canvas = self.layers.get("path")
+        canvas.clear()
+
+        for i, (y1, x1) in enumerate(path):
+            color = self.get_gradient_color(color_start, color_end,
+                                            i / max(1, len(path) - 1))
+            self.draw_cell_square(canvas, x1, y1, color)
+            if i == 0:
+                continue
+            (y2, x2) = path[i - 1]
+            if y2 < y1:    # North
+                wall = 1
+            elif y2 > y1:  # South
+                wall = 4
+            elif x2 < x1:  # West
+                wall = 8
+            elif x2 > x1:  # East
+                wall = 2
+            self.draw_cell_walls(canvas, x1, y1, wall, False, color)
 
     def draw_step(self, step_data: dict, color):
-        canvas = self.layers.get("path")
         maze_entry = self.model.config.entry
         maze_exit = self.model.config.exit
+        cmd, (y1, x1), (y2, x2) = step_data
 
-        (y, x), value = step_data
-        self.draw_cell_walls(canvas, color, x, y, value ^ 0xF)
-        if (y, x) not in [maze_entry, maze_exit]:
-            self.draw_cell_square(canvas, color, x, y)
+        if y2 < y1:    # North
+            wall = 1
+        elif y2 > y1:  # South
+            wall = 4
+        elif x2 < x1:  # West
+            wall = 8
+        elif x2 > x1:  # East
+            wall = 2
+        else:
+            return
+
+        match cmd:
+            case 'remove':
+                maze_canvas = self.layers.get("maze")
+                self.draw_cell_square(maze_canvas, x1, y1)
+                self.draw_cell_square(maze_canvas, x2, y2)
+                self.draw_cell_walls(maze_canvas, x1, y1, wall, False)
+            case 'fill':
+                path_canvas = self.layers.get("path")
+                color = self.colors.get("gen")
+                if (y1, x1) not in [maze_entry, maze_exit]:
+                    self.draw_cell_square(path_canvas, x1, y1, color)
+                if (y2, x2) not in [maze_entry, maze_exit]:
+                    self.draw_cell_square(path_canvas, x2, y2, color)
+                self.draw_cell_walls(path_canvas, x1, y1, wall, False, color)
+            case _:
+                pass
+
+        if (
+            (y1, x1) == self.model.config.entry
+            or (y2, x2) == self.model.config.exit
+        ):
+            self.draw_endpoints()
 
     def draw_endpoints(self):
         canvas = self.layers.get("path")
-        self.draw_cell_square(canvas, self.colors.get("entry"),
-                              self.model.config.entry[1],
-                              self.model.config.entry[0])
-        self.draw_cell_square(canvas, self.colors.get("exit"),
-                              self.model.config.exit[1],
-                              self.model.config.exit[0])
+        self.draw_cell_square(canvas, self.model.config.entry[1],
+                              self.model.config.entry[0],
+                              self.colors.get("entry"))
+        self.draw_cell_square(canvas, self.model.config.exit[1],
+                              self.model.config.exit[0],
+                              self.colors.get("exit"))
 
-    def draw_cell_walls(self, canvas, color, x, y, value):
+    def draw_cell_square(self, canvas, x, y, color=0xFF000000):
+        node = self.node_size
+        wall = self.wall_size
+        canvas.fill_rect(x * node + wall, y * node + wall,
+                         node - wall, node - wall, color)
+
+    def draw_cell_walls(self, canvas, x, y, value=0,
+                        corners=False, color=0xFF000000) -> None:
         node = self.node_size
         wall = self.wall_size
         x *= node
         y *= node
 
-        if value & 1:
-            canvas.fill_rect(x, y, node + wall, wall, color)
-        if value & 4:
-            canvas.fill_rect(x, y + node, node + wall, wall, color)
-        if value & 2:
-            canvas.fill_rect(x + node, y, wall, node + wall, color)
-        if value & 8:
-            canvas.fill_rect(x, y, wall, node + wall, color)
-
-    def draw_cell_square(self, canvas, color, x, y):
-        node = self.node_size
-        wall = self.wall_size
-        x *= node
-        y *= node
-
-        canvas.fill_rect(x + wall, y + wall, node - wall, node - wall, color)
+        if corners is True:
+            if value & 1:   # Top
+                canvas.fill_rect(x, y, node + wall, wall, color)
+            if value & 4:   # Bottom
+                canvas.fill_rect(x, y + node, node + wall, wall, color)
+            if value & 2:   # Right
+                canvas.fill_rect(x + node, y, wall, node + wall, color)
+            if value & 8:   # Left
+                canvas.fill_rect(x, y, wall, node + wall, color)
+        else:
+            if value & 1:   # Top
+                canvas.fill_rect(x + wall, y, node - wall, wall, color)
+            if value & 4:   # Bottom
+                canvas.fill_rect(x + wall, y + node, node - wall, wall, color)
+            if value & 2:   # Right
+                canvas.fill_rect(x + node, y + wall, wall, node - wall, color)
+            if value & 8:   # Left
+                canvas.fill_rect(x, y + wall, wall, node - wall, color)

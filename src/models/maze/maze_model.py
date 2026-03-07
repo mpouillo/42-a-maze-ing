@@ -51,8 +51,7 @@ class MazeModel:
     def generate_new_maze(self) -> None:
         self.gen_steps = list(self.get_generation_steps())
         self.save_current_maze()
-
-        self.solve_steps = list(self.generator.bfs())
+        self.solve_steps = list(self.generator.bfs(999))
         self.valid_paths = self.generator.bfs_paths
         self.save_solution(self.valid_paths[0])
 

@@ -314,11 +314,12 @@ class MazeGenerator:
 
         return neighbors
 
-    def bfs(self, max_paths = None):
+    def bfs(self, max_paths=1):
         self.initialize_visited()
         self.set_logo_as_visited()
 
-        visited_global = self.visited.copy() 
+        visited_global = self.visited.copy()
+        visited_global[self.entry] = True
         self.bfs_paths = []
 
         q = deque([self.entry])
@@ -337,7 +338,7 @@ class MazeGenerator:
 
                 self.bfs_paths.append(path[::-1])
 
-                if max_paths is not None and len(self.bfs_paths) >= max_paths:
+                if len(self.bfs_paths) >= max_paths:
                     return
                 continue
 

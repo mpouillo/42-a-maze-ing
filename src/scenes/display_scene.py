@@ -2,7 +2,6 @@ import random
 from src.models.maze import MazeModel
 from src.scenes import BaseScene
 from src.views.renderers import SquareRenderer, HexRenderer
-import numpy as np
 
 
 class DisplayScene(BaseScene):
@@ -11,18 +10,21 @@ class DisplayScene(BaseScene):
 
         self.model = MazeModel(self.app.config_file)
 
-        # if self.model.config.is_hex is True:
-        #    self.view = HexRenderer(self.app, self.model)
-        # else:
-        self.view = SquareRenderer(self.app, self.model)
+        if self.model.config.is_hex is True:
+            self.view = HexRenderer(self.app, self.model)
+        else:
+            self.view = SquareRenderer(self.app, self.model)
 
         self.solving = False
         self.solve_step = 0
         self.generating = False
         self.gen_step = 0
+        self.current_path = 0
 
         self.setup_ui()
+        self.view.buttons.get("solve").disable()
         self.view.draw_maze()
+        self.view.draw_endpoints()
 
     def setup_ui(self):
         self.view.clear_buttons()
@@ -30,6 +32,7 @@ class DisplayScene(BaseScene):
         btn_data = [
             ["regen", "Generate", self._cmd_generate_maze],
             ["solve", "Solve", self._cmd_solve_maze],
+            ["paths", "Toggle paths", self._cmd_toggle_paths],
             ["colors", "Random colors", self._cmd_random_colors],
         ]
 
@@ -54,25 +57,25 @@ class DisplayScene(BaseScene):
             9999, btn_width, btn_height, self._cmd_open_menu
         )
 
+    def _cmd_toggle_paths(self):
+        self.view.draw_path(self.model.valid_paths[self.current_path])
+        self.current_path += 1
+        if self.current_path > len(self.model.valid_paths) - 1:
+            self.current_path = 0
+        print("Displaying path:", self.current_path + 1, "/",
+              len(self.model.valid_paths))
+
     def _cmd_generate_maze(self):
         self.solving = False
 
         if self.generating:
-            self.generating = False
-            self.model.maze = self.model.final_maze.copy()
-            self.view.layers.get("path").clear()
-            self.view.draw_maze()
-            self.view.draw_endpoints()
-            self.view.buttons.get("regen").label = "Generate"
-            self.view.buttons.get("solve").enable()
-            self.gen_step = len(self.model.gen_steps)
+            while self.gen_step < len(self.model.gen_steps):
+                self.view.draw_step(
+                    self.model.gen_steps[self.gen_step], 0xFF000000
+                )
+                self.gen_step += 1
         else:
             self.model.generate_new_maze()
-            self.model.final_maze = self.model.maze.copy()
-            self.model.maze = np.full(
-                (self.model.config.height, self.model.config.width),
-                0xF, dtype=np.uint8
-            )
             self.view.draw_maze()
             self.view.layers.get("path").clear()
             self.view.buttons.get("regen").label = "Skip"
@@ -80,44 +83,48 @@ class DisplayScene(BaseScene):
             self.gen_step = 0
             self.generating = True
 
-        self.render("ui")
-
     def _cmd_solve_maze(self):
-        if self.generating or not self.model:
+        if self.generating:
             return
 
         if self.solving:
-            self.solving = False
-            self.view.buttons.get("solve").label = "Solve"
-            self.solve_step = len(self.model.solve_steps)
+            while self.solve_step < len(self.model.solve_steps):
+                self.view.draw_step(
+                    self.model.solve_steps[self.solve_step],
+                    self.view.colors.get("gen") & 0x7FFFFFFF
+                )
+                self.solve_step += 1
         else:
+            self.view.layers.get("path").clear()
             self.view.buttons.get("solve").label = "Skip"
             self.solve_step = 0
             self.solving = True
-
-        self.render("ui")
 
     def _cmd_random_colors(self):
         for color in self.view.colors:
             self.view.colors[color] = random.randrange(0xFF000000, 0xFFFFFFFF)
         self.render("maze", "path")
 
+    def skip_solve(self):
+        while self.solve_step < len(self.model.solve_steps):
+            self.view.draw_step(
+                self.model.solve_steps[self.solve_step - 1],
+                self.view.colors.get("gen") & 0x7FFFFFFF
+            )
+            self.gen_step += 1
+        self.solving = False
+        self.solve_step = 0
+        self.view.draw_ui()
+
     def update(self) -> None:
         if self.generating is True:
             if self.gen_step >= len(self.model.gen_steps):
                 self.generating = False
                 self.gen_step = 0
-                self.model.maze = self.model.final_maze.copy()
-                self.view.layers.get("path").clear()
-                self.view.draw_maze()
-                self.view.draw_endpoints()
-                self.view.buttons.get("regen").label = "Generate"
-                self.view.buttons.get("solve").enable()
-                self.render("ui")
+                self.setup_ui()
             else:
                 self.view.draw_step(
-                    self.model.gen_steps[self.gen_step],
-                    self.view.colors.get("gen")
+                    self.model.gen_steps[self.gen_step], 0xFF000000
                 )
                 self.gen_step += 1
 
@@ -125,12 +132,8 @@ class DisplayScene(BaseScene):
             if self.solve_step >= len(self.model.solve_steps):
                 self.solving = False
                 self.solve_step = 0
+                self.setup_ui()
             else:
-                if self.solve_step > 0:
-                    self.view.draw_step(
-                        self.model.solve_steps[self.solve_step - 1],
-                        self.view.colors.get("gen") & 0x7FFFFFFF
-                    )
                 self.view.draw_step(self.model.solve_steps[self.solve_step],
                                     self.view.colors.get("gen"))
                 self.solve_step += 1
