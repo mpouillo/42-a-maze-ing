@@ -314,38 +314,23 @@ class MazeGenerator:
 
         return neighbors
 
-    def bfs(self, max_paths=1):
+    def bfs(self, max_paths = 999):
         self.initialize_visited()
         self.set_logo_as_visited()
-
-        visited_global = self.visited.copy()
-        visited_global[self.entry] = True
         self.bfs_paths = []
 
-        q = deque([self.entry])
-
-        parent = {self.entry: None}
+        q = deque([(self.entry, [self.entry])])
 
         while q:
-            curr = q.popleft()
+            curr, path = q.popleft()
 
             if curr == self.exit:
-                path = []
-                temp = curr
-                while temp is not None:
-                    path.append(temp)
-                    temp = parent[temp]
-
-                self.bfs_paths.append(path[::-1])
-
+                self.bfs_paths.append(path)
                 if len(self.bfs_paths) >= max_paths:
                     return
                 continue
 
             for nxt in self.get_neighbors_open(curr):
-                if not visited_global[nxt]:
-                    visited_global[nxt] = True
-                    parent[nxt] = curr
-                    q.append(nxt)
-
+                if nxt not in path:
                     yield ("fill", curr, nxt)
+                    q.append((nxt, path + [nxt]))
