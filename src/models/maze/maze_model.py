@@ -36,9 +36,7 @@ class MazeModel:
         else:
             self.generator = MazeGenerator(self.config)
 
-        self.maze: Optional[np.ndarray] = np.full(
-            (self.config.height, self.config.width), 0xF, dtype=np.uint8
-        )
+        self.maze: Optional[np.ndarray] = None
         self.solved_maze: Optional[np.ndarray] = None
 
         self.gen_steps = []
