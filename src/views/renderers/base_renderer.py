@@ -27,12 +27,23 @@ class BaseRenderer:
             "btn_bg": 0xFF333333,
             "btn_text": 0xFFFFFFFF,
             "btn_border": 0xFF555555,
-            "btn_hover": 0xFFFFAAAA,
+            "btn_hover": 0xFFCBDE00,
             "btn_disabled": 0xFF404040,
             "btn_text": 0xFFFFFFFF,
             "btn_text_disabled": 0xFF7F7F7F,
             "border_weight": 4,
             "font_scale": 3
+        }
+
+        self.colors = {
+            "cell": 0xFF0000FF,
+            "character": 0xFF00FFFF,
+            "entry": 0xFF00FF00,
+            "exit": 0xFFFF0000,
+            "path_1": 0xFF00FF00,
+            "path_2": 0xFFFF0000,
+            "walls": 0xFFFFFFFF,
+            "gen": 0xFFFF007F
         }
 
         self.fonts_dir = "src/fonts"
@@ -68,10 +79,19 @@ class BaseRenderer:
                       width: int, height: int) -> Canvas:
         return Canvas(self.app, x, y, z, width, height)
 
-    def clear_canvas(self):
-        for layer in self.layers.values():
-            layer.clear()
-        self.layers.clear()
+    def add_layer(self, name, x, y, z, width, height):
+        canvas = self.create_canvas(x, y, z, width, height)
+        self.layers.update({name: canvas})
+        return canvas
+
+    def delete_layer(self, *names):
+        to_delete = []
+        for name, layer in self.layers.items():
+            if name in names:
+                layer.clear()
+                to_delete.append(name)
+        for name in to_delete:
+            self.layers.pop(name)
 
     def update_color(self, name: str, new_color: int) -> None:
         if name in self.colors:
@@ -171,7 +191,7 @@ class BaseRenderer:
 
     def refresh_layers(self):
         self.app.mlx.mlx_clear_window(self.app.mlx_ptr, self.app.win_ptr)
-        for layer in self.layers.values():
+        for layer in sorted(self.layers.values(), key=lambda layer: layer.z):
             self.app.mlx.mlx_put_image_to_window(
                 self.app.mlx_ptr, self.app.win_ptr, layer.ptr, layer.x, layer.y
             )

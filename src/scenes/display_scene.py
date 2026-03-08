@@ -23,6 +23,7 @@ class DisplayScene(BaseScene):
 
         self.setup_ui()
         self.view.buttons.get("solve").disable()
+        self.view.buttons.get("paths").disable()
         self.view.draw_maze()
         self.view.draw_endpoints()
 
@@ -62,8 +63,17 @@ class DisplayScene(BaseScene):
         self.current_path += 1
         if self.current_path > len(self.model.valid_paths) - 1:
             self.current_path = 0
-        print("Displaying path:", self.current_path + 1, "/",
-              len(self.model.valid_paths))
+        canvas = self.view.add_layer("text", 0, 0, 999,
+                                     self.app.window_width,
+                                     self.app.window_height)
+        self.view.draw_text(
+            canvas, self.view.offset_x,
+            self.app.window_height - self.view.pad_h + 20,
+            (f"Displaying path: {self.current_path}/"
+             f"{len(self.model.valid_paths)}"
+             f"({len(self.model.valid_paths[self.current_path])})"),
+            0xFFFFFFFF, 2
+        )
 
     def _cmd_generate_maze(self):
         self.solving = False
@@ -75,9 +85,13 @@ class DisplayScene(BaseScene):
                 )
                 self.gen_step += 1
         else:
-            self.model.generate_new_maze()
-            self.view.draw_maze()
             self.view.layers.get("path").clear()
+            import numpy as np
+            self.model.maze = np.full((self.model.config.height,
+                                       self.model.config.width),
+                                      0x3F, dtype=np.uint8)
+            self.view.draw_maze()
+            self.model.generate_new_maze()
             self.view.buttons.get("regen").label = "Skip"
             self.view.buttons.get("solve").disable()
             self.gen_step = 0

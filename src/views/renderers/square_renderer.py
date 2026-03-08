@@ -6,7 +6,7 @@ class SquareRenderer(BaseRenderer):
     def __init__(self, app, model: MazeModel) -> None:
         super().__init__(app, model)
 
-        self.wall_size = 2
+        self.wall_size = 4
         self.compute_scales()
 
         self.layers = {
@@ -18,17 +18,6 @@ class SquareRenderer(BaseRenderer):
                                      self.app.window_height)
         }
 
-        self.colors = {
-            "cell": 0xFF0000FF,
-            "character": 0xFF00FFFF,
-            "entry": 0xFF00FF00,
-            "exit": 0xFFFF0000,
-            "path_1": 0xFF00FF00,
-            "path_2": 0xFFFF0000,
-            "walls": 0xFFFFFFFF,
-            "gen": 0xFFFF007F
-        }
-
     def compute_scales(self):
         available_w = self.app.window_width - self.pad_w * 2 - self.wall_size
         available_h = self.app.window_height - self.pad_h * 2 - self.wall_size
@@ -36,6 +25,10 @@ class SquareRenderer(BaseRenderer):
         rows = self.model.config.height
 
         self.node_size = min(available_w // cols, available_h // rows)
+        if self.node_size <= self.wall_size * 2:
+            self.wall_size = max(1, self.node_size // 2)
+            self.compute_scales()
+
         self.maze_w = cols * self.node_size + self.wall_size
         self.maze_h = rows * self.node_size + self.wall_size
         self.offset_x = (self.app.window_width - self.maze_w) // 2
@@ -44,14 +37,14 @@ class SquareRenderer(BaseRenderer):
     def draw_maze(self):
         wall_color = self.colors.get("walls")
         cell_color = self.colors.get("cell")
-
         canvas = self.layers.get("maze")
         canvas.clear()
 
-        for y in range(self.model.config.height):
-            for x in range(self.model.config.width):
-                self.draw_cell_walls(canvas, x, y, 0xF, True, wall_color)
-                self.draw_cell_square(canvas, x, y, cell_color)
+        for y, row in enumerate(self.model.maze):
+            for x, value in enumerate(row):
+                self.draw_cell_walls(canvas, x, y, value, True, wall_color)
+                if value == 0xF:
+                    self.draw_cell_square(canvas, x, y, cell_color)
 
     def draw_path(self, path: list, color: int = None):
         color_start = self.colors.get("path_1")
@@ -100,7 +93,6 @@ class SquareRenderer(BaseRenderer):
                 self.draw_cell_walls(maze_canvas, x1, y1, wall, False)
             case 'fill':
                 path_canvas = self.layers.get("path")
-                color = self.colors.get("gen")
                 if (y1, x1) not in [maze_entry, maze_exit]:
                     self.draw_cell_square(path_canvas, x1, y1, color)
                 if (y2, x2) not in [maze_entry, maze_exit]:

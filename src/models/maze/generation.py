@@ -314,7 +314,7 @@ class MazeGenerator:
 
         return neighbors
 
-    def bfs(self, max_paths = 999):
+    def bfs(self, max_paths=999):
         self.initialize_visited()
         self.set_logo_as_visited()
         self.bfs_paths = []

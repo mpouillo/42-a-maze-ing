@@ -19,6 +19,15 @@ class Canvas:
         self.bytes_per_pixel = self.bpp // 8
         self.clear()
 
+    def get_color_bytes(self, color):
+        b = color & 0xFF
+        g = (color >> 8) & 0xFF
+        r = (color >> 16) & 0xFF
+        a = (color >> 24) & 0xFF
+
+        return (bytes([b, g, r, a]) if self.endian == 0
+                else bytes([a, r, g, b]))
+
     def fill_rect(self, x: int, y: int,
                   width: int, height: int,
                   color: int) -> None:
@@ -30,18 +39,47 @@ class Canvas:
         ):
             return
 
-        b = color & 0xFF
-        g = (color >> 8) & 0xFF
-        r = (color >> 16) & 0xFF
-        a = (color >> 24) & 0xFF
-
-        pixel = (bytes([b, g, r, a]) if self.endian == 0
-                 else bytes([a, r, g, b]))
-
+        pixel = self.get_color_bytes(color)
         line_data = pixel * width
         for i in range(y, y + height):
             start = (i * self.size_line) + (x * self.bytes_per_pixel)
             self.buffer[start:(start + len(line_data))] = line_data
+
+    def draw_pixel(self, x: int, y: int, color: int) -> None:
+        if 0 <= x < self.width and 0 <= y < self.height:
+            pixel = self.get_color_bytes(color)
+            start = (y * self.size_line) + (x * self.bytes_per_pixel)
+            self.buffer[start:(start + self.bytes_per_pixel)] = pixel
+
+    def draw_line(self, x0: int, y0: int, x1: int, y1: int,
+                  color: int, thickness: int = 1) -> None:
+        x0, y0, x1, y1 = int(x0), int(y0), int(x1), int(y1)
+        dx, dy = abs(x1 - x0), abs(y1 - y0)
+        sx, sy = 1 if x0 < x1 else -1, 1 if y0 < y1 else -1
+        err = dx - dy
+
+        offsets = []
+        if thickness > 1:
+            half = thickness // 2
+            for i in range(-half, half + 1):
+                for j in range(-half, half + 1):
+                    if i*i + j*j <= half*half + 1:
+                        offsets.append((i, j))
+        if not offsets:
+            offsets = [(0, 0)]
+
+        while True:
+            for ox, oy in offsets:
+                self.draw_pixel(x0 + ox, y0 + oy, color)
+            if x0 == x1 and y0 == y1:
+                break
+            e2 = 2 * err
+            if e2 > -dy:
+                err -= dy
+                x0 += sx
+            if e2 < dx:
+                err += dx
+                y0 += sy
 
     def clear(self):
         self.buffer[:] = (
