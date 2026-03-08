@@ -37,15 +37,14 @@ class MazeModel:
             self.generator = MazeGenerator(self.config)
 
         if self.config.is_hex:
-            self.maze: np.ndarray = np.full(
-                (self.config.height, self.config.width),
-                0x3F, dtype=np.uint8
+            self.maze: Optional[np.ndarray] = np.full(
+                (self.config.height, self.config.width), 0x3F, dtype=np.uint8
             )
         else:
-            self.maze: np.ndarray= np.full(
-                (self.config.height, self.config.width),
-                0xF, dtype=np.uint8
+            self.maze: Optional[np.ndarray] = np.full(
+                (self.config.height, self.config.width), 0xF, dtype=np.uint8
             )
+        self.solved_maze: Optional[np.ndarray] = None
 
         self.solved_maze: Optional[np.ndarray] = None
         self.gen_steps = []
@@ -65,7 +64,7 @@ class MazeModel:
     def generate_new_maze(self) -> None:
         self.gen_steps = list(self.get_generation_steps())
         self.save_current_maze()
-        self.solve_steps = list(self.generator.bfs_opti())
+        self.solve_steps = list(self.generator.bfs(20))
         self.valid_paths = sorted(self.generator.bfs_paths,
                                   key=lambda path: len(path))
         self.save_solution(self.valid_paths[0])

@@ -85,12 +85,11 @@ class DisplayScene(BaseScene):
                 )
                 self.gen_step += 1
         else:
-            import numpy as np
             self.view.layers.get("path").clear()
-            self.model.maze = np.full(
-                (self.model.config.height, self.model.config.width),
-                0x3F, dtype=np.uint8
-            )
+            import numpy as np
+            self.model.maze = np.full((self.model.config.height,
+                                       self.model.config.width),
+                                      0x3F, dtype=np.uint8)
             self.view.draw_maze()
             self.model.generate_new_maze()
             self.view.buttons.get("regen").label = "Skip"
