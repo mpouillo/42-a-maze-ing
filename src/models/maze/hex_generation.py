@@ -101,8 +101,8 @@ class HexMazeGenerator:
             self.maze[current] &= 0xFF & ~curr_mask
             self.maze[next_cell] &= 0xFF & ~next_mask
 
-    def generate_steps(self) -> StepGenerator:
-        self.initialize_maze_grid()
+    def generate_steps(self):
+        self.initialize_maze()
         self.initialize_visited()
         self.set_logo_as_visited()
 

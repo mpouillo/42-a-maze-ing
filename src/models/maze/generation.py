@@ -30,7 +30,7 @@ class MazeGenerator:
         if config.seed is not None:
             seed(config.seed)
 
-    def initialize_maze_grid(self) -> None:
+    def initialize_maze(self) -> None:
         self.maze = np.full((self.height, self.width), 0xF, dtype=np.uint8)
 
     def initialize_visited(self) -> None:
@@ -94,7 +94,7 @@ class MazeGenerator:
             self.maze[next_cell] &= 0XFF & ~self.LEFT
 
     def generate_steps(self) -> StepGenerator:
-        self.initialize_maze_grid()
+        self.initialize_maze()
         self.initialize_visited()
         self.set_logo_as_visited()
 
@@ -314,7 +314,7 @@ class MazeGenerator:
 
         return neighbors
 
-    def bfs(self, max_paths = 999):
+    def bfs(self, max_paths=999):
         self.initialize_visited()
         self.set_logo_as_visited()
         self.bfs_paths = []

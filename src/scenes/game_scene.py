@@ -12,15 +12,24 @@ class GameScene(BaseScene):
 
         self.pos_x = 0
         self.pos_y = 0
+        self.prev_x = 0
+        self.prev_y = 0
+        self.help = False
 
         self.setup_ui()
+        path = self.view.layers.get("path")
+        self.view.add_layer("char", path.x, path.y, path.z + 1,
+                            path.width, path.height)
+        self.model.generate_new_maze()
         self.view.draw_maze()
+        self.view.draw_endpoints()
 
     def setup_ui(self):
         self.view.clear_buttons()
 
         btn_data = [
-            ["reset", "Reset", self.reset_game]
+            ["reset", "Reset", self.reset_game],
+            ["help", "Help OFF", self.show_help]
         ]
 
         btn_width = min(self.view.ui_style.get("btn_width", 0),
@@ -41,13 +50,20 @@ class GameScene(BaseScene):
             "menu", "Menu",
             self.app.window_width - (self.view.pad_w + btn_width),
             self.app.window_height - (self.view.pad_h + btn_height) // 2,
-            9999, btn_width, btn_height, self.open_menu
+            9999, btn_width, btn_height, self._cmd_open_menu
         )
+
+    def show_help(self):
+        if self.help:
+            self.view.buttons.get("help").label = "Help OFF"
+            self.help = False
+        else:
+            self.view.buttons.get("help").label = "Help ON"
+            self.help = True
 
     def reset_game(self):
         self.pos_x = 0
         self.pos_y = 0
-        self.model.reset_maze()
         self.view.refresh_layers()
 
     def draw_character(self):
@@ -55,18 +71,17 @@ class GameScene(BaseScene):
         wall = self.view.wall_size
         color = self.view.colors.get("character")
 
-        canvas = self.view.layers.get("path")
+        canvas = self.view.layers.get("char")
         canvas.clear()
+
         canvas.fill_rect(self.pos_x * node + wall, self.pos_y * node + wall,
                          node - wall, node - wall, color)
 
     def end_game(self):
         import time
-        canvas = self.view.layers.get("path")
-        canvas.clear()
-        canvas.fill_rect(0, 0, self.app.window_width,
-                         self.app.window_height, 0xFF000000)
-
+        canvas = self.view.add_layer("text", 0, 0, 999,
+                                     self.app.window_width,
+                                     self.app.window_height)
         font_scale = max(1, min(
             self.app.window_height, self.app.window_width) // 100
         )
@@ -76,23 +91,39 @@ class GameScene(BaseScene):
         text_x = (self.app.window_width - text_w) // 2
         text_y = (self.app.window_height - text_h) // 2
 
+        canvas.fill_rect(0, 0, self.app.window_width, self.app.window_height,
+                         0x7F000000)
+
+        canvas.fill_rect(text_x - 30, text_y - 30, text_w + 80, text_h + 80,
+                         0xFF754814)
+
+        canvas.fill_rect(text_x - 40, text_y - 40, text_w + 80, text_h + 80,
+                         0xFFF7931E)
+
         self.view.draw_text(canvas, text_x, text_y, text,
                             0xFFFFFFFF, font_scale)
 
         self.view.refresh_layers()
         self.app.mlx.mlx_do_sync(self.app.mlx_ptr)
 
-        time.sleep(3)
+        time.sleep(2)
 
         canvas.clear()
-        self.model.maze_controller.config.height += 1
-        self.model.maze_controller.config.width += 1
+        self.model.config.height += 1
+        self.model.config.width += 1
+        self.model.generate_new_maze()
         self.reset_game()
 
     def render(self):
         self.view.draw_maze()
-        self.view.draw_endpoints()
         self.draw_character()
+        self.view.layers.get("path").clear()
+        self.view.draw_endpoints()
+        if self.help is True:
+            cur = (self.pos_y, self.pos_x)
+            for path in self.model.valid_paths:
+                if cur in path:
+                    self.view.draw_path(path)
         self.view.draw_ui()
         self.view.refresh_layers()
 
@@ -100,19 +131,27 @@ class GameScene(BaseScene):
         # Move character
         cur_cell = self.model.maze[self.pos_y][self.pos_x]
         if 65361 in self.app.keypresses and not cur_cell & 8:   # Left
+            self.prev_x = self.pos_x
+            self.prev_y = self.pos_y
             self.pos_x -= 1
         cur_cell = self.model.maze[self.pos_y][self.pos_x]
         if 65362 in self.app.keypresses and not cur_cell & 1:   # Up
+            self.prev_x = self.pos_x
+            self.prev_y = self.pos_y
             self.pos_y -= 1
         cur_cell = self.model.maze[self.pos_y][self.pos_x]
         if 65364 in self.app.keypresses and not cur_cell & 4:   # Down
+            self.prev_x = self.pos_x
+            self.prev_y = self.pos_y
             self.pos_y += 1
         cur_cell = self.model.maze[self.pos_y][self.pos_x]
         if 65363 in self.app.keypresses and not cur_cell & 2:   # Right
+            self.prev_x = self.pos_x
+            self.prev_y = self.pos_y
             self.pos_x += 1
 
         # Exit reached
-        if (self.pos_y, self.pos_x) == self.model.exit:
+        if (self.pos_y, self.pos_x) == self.model.config.exit:
             self.end_game()
             return
 
@@ -120,5 +159,8 @@ class GameScene(BaseScene):
         if 65507 in self.app.keypresses:
             self.app.keypresses.clear()
             self.app.keypresses.add(65507)
+
+        if 108 in self.app.keypresses:
+            self.end_game()
 
         super().update()
