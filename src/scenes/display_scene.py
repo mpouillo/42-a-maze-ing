@@ -98,6 +98,7 @@ class DisplayScene(BaseScene):
             self.current_path = 0
 
         canvas = self.view.layers.get("popup")
+        canvas.clear()
         self.view.draw_text(
             canvas, self.view.offset_x,
             self.app.window_height - self.view.pad_h + 20,
