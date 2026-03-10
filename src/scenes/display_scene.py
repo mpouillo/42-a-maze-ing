@@ -119,16 +119,27 @@ class DisplayScene(BaseScene):
             self.view.colors[color] = random.randrange(0xFF000000, 0xFFFFFFFF)
         self.render("maze", "path")
 
-    def skip_solve(self):
-        while self.solve_step < len(self.model.solve_steps):
-            self.view.draw_step(
-                self.model.solve_steps[self.solve_step - 1],
-                self.view.colors.get("gen") & 0x7FFFFFFF
-            )
-            self.gen_step += 1
-        self.solving = False
-        self.solve_step = 0
-        self.view.draw_ui()
+        if 65507 in self.app.keypresses:
+            self.view.layers.get("path").clear()
+            return
+
+        self.view.draw_path(self.model.valid_paths[self.current_path])
+        self.view.draw_endpoints()
+
+        self.current_path += 1
+        if self.current_path > len(self.model.valid_paths) - 1:
+            self.current_path = 0
+
+        canvas = self.view.layers.get("popup")
+        canvas.clear()
+        self.view.draw_text(
+            canvas, self.view.offset_x,
+            self.app.window_height - self.view.pad_h + 20,
+            (f"Displaying path: {self.current_path + 1}/"
+             f"{len(self.model.valid_paths)}"
+             f"({len(self.model.valid_paths[self.current_path])})"),
+            0xFFFFFFFF, 2
+        )
 
     def update(self) -> None:
         if self.generating is True:
