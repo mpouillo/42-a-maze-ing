@@ -1,6 +1,6 @@
 from src.models.maze import MazeModel
 from src.scenes import BaseScene
-from src.views.renderers import SquareRenderer
+from src.views.renderers import SquareRenderer, HexRenderer
 
 
 class GameScene(BaseScene):
@@ -8,7 +8,10 @@ class GameScene(BaseScene):
         super().__init__(app)
 
         self.model = MazeModel(self.app.config_file)
-        self.view = SquareRenderer(self.app, self.model)
+        if self.model.config.is_hex is True:
+            self.view = HexRenderer(self.app, self.model)
+        else:
+            self.view = SquareRenderer(self.app, self.model)
 
         self.pos_x = 0
         self.pos_y = 0
@@ -17,9 +20,7 @@ class GameScene(BaseScene):
         self.help = False
 
         self.setup_ui()
-        path = self.view.layers.get("path")
-        self.view.add_layer("char", path.x, path.y, path.z + 1,
-                            path.width, path.height)
+        self.view.add_layer("char", 10)
         self.model.generate_new_maze()
         self.view.draw_maze()
         self.view.draw_endpoints()
@@ -67,21 +68,14 @@ class GameScene(BaseScene):
         self.view.refresh_layers()
 
     def draw_character(self):
-        node = self.view.node_size
-        wall = self.view.wall_size
         color = self.view.colors.get("character")
-
         canvas = self.view.layers.get("char")
         canvas.clear()
-
-        canvas.fill_rect(self.pos_x * node + wall, self.pos_y * node + wall,
-                         node - wall, node - wall, color)
+        self.view.draw_cell_center(canvas, self.pos_x, self.pos_y, color)
 
     def end_game(self):
         import time
-        canvas = self.view.add_layer("text", 0, 0, 999,
-                                     self.app.window_width,
-                                     self.app.window_height)
+        canvas = self.view.layers.get("popup")
         font_scale = max(1, min(
             self.app.window_height, self.app.window_width) // 100
         )
@@ -109,23 +103,30 @@ class GameScene(BaseScene):
         time.sleep(2)
 
         canvas.clear()
-        self.model.config.height += 1
-        self.model.config.width += 1
-        self.model.generate_new_maze()
+        while True:
+            try:
+                self.model.config.height += 1
+                self.model.config.width += 1
+                self.model.generate_new_maze()
+                break
+            except ValueError:
+                pass
+        self.view.compute_scales()
+        self.view.draw_maze()
         self.reset_game()
 
     def render(self):
-        self.view.draw_maze()
         self.draw_character()
-        self.view.layers.get("path").clear()
+        self.view.layers.get("main").clear()
         self.view.draw_endpoints()
         if self.help is True:
             cur = (self.pos_y, self.pos_x)
             for path in self.model.valid_paths:
                 if cur in path:
                     self.view.draw_path(path)
-        self.view.draw_ui()
-        self.view.refresh_layers()
+                    break
+
+        super().render()
 
     def update(self) -> None:
         # Move character

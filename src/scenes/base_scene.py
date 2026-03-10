@@ -13,3 +13,7 @@ class BaseScene:
         for button in self.view.buttons.values():
             if button.is_hovered(x, y) != button.hover:
                 button.hover = not button.hover
+
+    def render(self):
+        self.view.redraw_ui()
+        self.view.refresh_layers()

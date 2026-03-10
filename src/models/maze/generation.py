@@ -23,6 +23,7 @@ class MazeGenerator:
 
         self.config.height = config.height
         self.config.width = config.width
+
         self.config.entry = config.entry
         self.config.exit = config.exit
         self.config.perfect = config.perfect
@@ -31,10 +32,12 @@ class MazeGenerator:
             seed(config.seed)
 
     def initialize_maze(self) -> None:
-        self.maze = np.full((self.config.height, self.config.width), 0xF, dtype=np.uint8)
+        self.maze = np.full((self.config.height, self.config.width),
+                            0xF, dtype=np.uint8)
 
     def initialize_visited(self) -> None:
-        self.visited = np.zeros((self.config.height, self.config.width), dtype=bool)
+        self.visited = np.zeros((self.config.height, self.config.width),
+                                dtype=bool)
 
     def set_logo_as_visited(self) -> None:
         """Mark logo area as visited so the maze generates around it"""
@@ -194,6 +197,7 @@ class MazeGenerator:
             found_deadend = False
             for row in range(self.config.height):
                 for col in range(self.config.width):
+
                     if ((row, col) != self.config.entry and
                             (row, col) != self.config.exit and
                             self.count_walls(row, col, maze) == 3):
