@@ -45,9 +45,8 @@ class Canvas:
             start = (i * self.size_line) + (x * self.bytes_per_pixel)
             self.buffer[start:(start + len(line_data))] = line_data
 
-    def draw_pixel(self, x: int, y: int, color: int) -> None:
+    def draw_pixel(self, x: int, y: int, pixel: int) -> None:
         if 0 <= x < self.width and 0 <= y < self.height:
-            pixel = self.get_color_bytes(color)
             start = (y * self.size_line) + (x * self.bytes_per_pixel)
             self.buffer[start:(start + self.bytes_per_pixel)] = pixel
 
@@ -57,6 +56,7 @@ class Canvas:
         dx, dy = abs(x1 - x0), abs(y1 - y0)
         sx, sy = 1 if x0 < x1 else -1, 1 if y0 < y1 else -1
         err = dx - dy
+        pixel = self.get_color_bytes(color)
 
         offsets = []
         if thickness > 1:
@@ -70,7 +70,7 @@ class Canvas:
 
         while True:
             for ox, oy in offsets:
-                self.draw_pixel(x0 + ox, y0 + oy, color)
+                self.draw_pixel(x0 + ox, y0 + oy, pixel)
             if x0 == x1 and y0 == y1:
                 break
             e2 = 2 * err

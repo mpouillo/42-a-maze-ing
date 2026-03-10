@@ -9,15 +9,9 @@ class BaseRenderer:
     def __init__(self, app, model: MazeModel) -> None:
         self.app = app
         self.model = model
-
         self.pad_w = 20
         self.pad_h = 100
-
-        self.layers = {
-            "ui": self.create_canvas(0, 0, 0, self.app.window_width,
-                                     self.app.window_height)
-        }
-
+        self.layers = {}
         self.buttons = {}
 
         self.ui_style = {
@@ -27,7 +21,7 @@ class BaseRenderer:
             "btn_bg": 0xFF333333,
             "btn_text": 0xFFFFFFFF,
             "btn_border": 0xFF555555,
-            "btn_hover": 0xFFCBDE00,
+            "btn_hover": 0xffffbe0b,
             "btn_disabled": 0xFF404040,
             "btn_text": 0xFFFFFFFF,
             "btn_text_disabled": 0xFF7F7F7F,
@@ -36,15 +30,22 @@ class BaseRenderer:
         }
 
         self.colors = {
-            "cell": 0xFF0000FF,
-            "character": 0xFF00FFFF,
+            "cell": 0xffffbe0b,
+            "character": 0xff3a86ff,
             "entry": 0xFF00FF00,
             "exit": 0xFFFF0000,
-            "path_1": 0xFF00FF00,
-            "path_2": 0xFFFF0000,
-            "walls": 0xFFFFFFFF,
-            "gen": 0xFFFF007F
+            "path_1": 0xff3a86ff,
+            "path_2": 0xff8338ec,
+            "walls": 0xffff006e,
+            "step": 0xfffb5607
         }
+
+        self.add_layer("bg", 0, 0, 0, self.app.window_width,
+                       self.app.window_height)
+        self.add_layer("ui", 0, 0, 0, self.app.window_width,
+                       self.app.window_height)
+        self.add_layer("popup", 0, 0, 0, self.app.window_width,
+                       self.app.window_height)
 
         self.fonts_dir = "src/fonts"
         self.fonts_dict = self.parse_fonts(self.fonts_dir)
@@ -84,12 +85,30 @@ class BaseRenderer:
         self.layers.update({name: canvas})
         return canvas
 
-    def delete_layer(self, *names):
-        to_delete = []
-        for name, layer in self.layers.items():
-            if name in names:
+    def clear_layers(self, *names):
+        if not names:
+            for layer in self.layers.values():
                 layer.clear()
+            return
+
+        for name in names:
+            layer = self.layers.get(name)
+            if layer:
+                layer.clear()
+
+    def delete_layers(self, *names):
+        to_delete = []
+
+        if not names:
+            for name, layer in self.layers.items():
+                layer.destroy()
                 to_delete.append(name)
+        else:
+            for name, layer in self.layers.items():
+                if name in names:
+                    layer.destroy()
+                    to_delete.append(name)
+
         for name in to_delete:
             self.layers.pop(name)
 
@@ -114,12 +133,6 @@ class BaseRenderer:
         blue = int(blue_1 + (blue_2 - blue_1) * mix)
 
         return (alpha << 24) | (red << 16) | (green << 8) | blue
-
-    def draw_ui(self):
-        canvas = self.layers.get("ui")
-        canvas.clear()
-        for button in self.buttons.values():
-            self.draw_button(canvas, button)
 
     def add_button(self, name: str, label: str, x: int, y: int, z: int,
                    width: int, height: int, action: callable) -> None:
@@ -169,6 +182,12 @@ class BaseRenderer:
         self.draw_text(
             canvas, text_x, text_y, btn.label, text_color, font_scale
         )
+
+    def redraw_ui(self):
+        canvas = self.layers.get("ui")
+        canvas.clear()
+        for button in self.buttons.values():
+            self.draw_button(canvas, button)
 
     def draw_text(self, canvas: Canvas, start_x: int, start_y: int,
                   text: str, color: int, scale: int | None = None) -> None:

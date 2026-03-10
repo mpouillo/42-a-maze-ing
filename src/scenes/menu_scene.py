@@ -1,5 +1,6 @@
 from src.scenes import BaseScene
 from src.views.renderers import BaseRenderer
+import os
 
 
 class MenuScene(BaseScene):
@@ -14,8 +15,8 @@ class MenuScene(BaseScene):
         self.view.clear_buttons()
 
         btn_data = [
-            ["display", "Display", self._cmd_start_display],
-            ["play", "Play", self._cmd_start_game]
+            ["square", "SQUARE MODE", self._cmd_start_square],
+            ["hex", "HEX MODE", self._cmd_start_hex]
         ]
 
         btn_width = self.view.ui_style.get("btn_width", 0)
@@ -31,20 +32,16 @@ class MenuScene(BaseScene):
             )
 
     def draw_bg(self):
-        canvas = self.view.add_layer("bg", 0, 0, -1,
-                                     self.app.window_width,
-                                     self.app.window_height)
+        canvas = self.view.layers.get("bg")
         for row in range(self.app.window_height):
             mix = row / self.app.window_height
             color = self.view.get_gradient_color(
-                0xFFFF00FF, 0xFFF7931E, mix
+                0xffffbe0b, 0xffff006e, mix
             )
             canvas.fill_rect(0, row, canvas.width, 1, color)
 
     def draw_logo(self):
-        canvas = self.view.add_layer("logo", 0, 0, 999,
-                                     self.app.window_width,
-                                     self.app.window_height)
+        canvas = self.view.layers.get("popup")
         text = "A-Maze-ing"
         scale = 10
         text_w = (len(text) + 1) * scale * self.view.font_width
@@ -63,23 +60,29 @@ class MenuScene(BaseScene):
             self.app.window_height // 10 * 4, "A-Maze-ing", 0xFFFFFFFF, 10
         )
 
+    def _cmd_start_square(self):
+        os.environ["HEX"] = "False"
+        self._cmd_start_display()
+
+    def _cmd_start_hex(self):
+        os.environ["HEX"] = "True"
+        self._cmd_start_display()
+
     def _cmd_start_display(self):
         from src.scenes import DisplayScene
-        self.view.delete_layer("bg")
-        self.view.delete_layer("logo")
+        self.view.clear_layers()
         self.view.clear_buttons()
         self.app.current_scene = DisplayScene(self.app)
 
-    def _cmd_start_game(self):
-        from src.scenes import GameScene
-        self.view.delete_layer("bg")
-        self.view.delete_layer("logo")
-        self.view.clear_buttons()
-        self.app.current_scene = GameScene(self.app)
+    # def _cmd_start_game(self):
+    #     from src.scenes import GameScene
+    #     self.view.delete_layer("bg")
+    #     self.view.delete_layer("logo")
+    #     self.view.clear_buttons()
+    #     self.app.current_scene = GameScene(self.app)
 
     def update(self):
         super().update()
 
     def render(self):
-        self.view.draw_ui()
-        self.view.refresh_layers()
+        super().render()
