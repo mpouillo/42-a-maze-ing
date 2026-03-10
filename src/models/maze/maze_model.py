@@ -46,10 +46,12 @@ class MazeModel:
             )
         self.solved_maze: Optional[np.ndarray] = None
 
+        self.solved_maze: Optional[np.ndarray] = None
         self.gen_steps = []
         self.solve_steps = []
-
         self.valid_paths = []
+
+        self.generator.initialize_maze()
 
     # FILE OPERATIONS
 

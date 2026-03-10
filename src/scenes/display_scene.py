@@ -34,7 +34,6 @@ class DisplayScene(BaseScene):
             ["regen", "Generate", self._cmd_generate_maze],
             ["solve", "Solve", self._cmd_solve_maze],
             ["paths", "Toggle paths", self._cmd_toggle_paths],
-            ["colors", "Random colors", self._cmd_random_colors],
         ]
 
         btn_width = min(self.view.ui_style.get("btn_width", 0),
@@ -59,7 +58,16 @@ class DisplayScene(BaseScene):
         )
 
     def _cmd_toggle_paths(self):
+        if 65507 in self.app.keypresses:
+            self.view.layers.get("path").clear()
+            self.current_path -= 1
+            return
+
+        if self.solving:
+            self.solving = False
+        self.view.layers.get("path").clear()
         self.view.draw_path(self.model.valid_paths[self.current_path])
+        self.view.draw_endpoints()
         self.current_path += 1
         if self.current_path > len(self.model.valid_paths) - 1:
             self.current_path = 0
@@ -69,7 +77,7 @@ class DisplayScene(BaseScene):
         self.view.draw_text(
             canvas, self.view.offset_x,
             self.app.window_height - self.view.pad_h + 20,
-            (f"Displaying path: {self.current_path}/"
+            (f"Displaying path: {self.current_path + 1}/"
              f"{len(self.model.valid_paths)}"
              f"({len(self.model.valid_paths[self.current_path])})"),
             0xFFFFFFFF, 2
@@ -87,9 +95,14 @@ class DisplayScene(BaseScene):
         else:
             self.view.layers.get("path").clear()
             import numpy as np
-            self.model.maze = np.full((self.model.config.height,
-                                       self.model.config.width),
-                                      0x3F, dtype=np.uint8)
+            if self.model.config.is_hex:
+                self.model.maze = np.full((self.model.config.height,
+                                           self.model.config.width),
+                                          0x3F, dtype=np.uint8)
+            else:
+                self.model.maze = np.full((self.model.config.height,
+                                           self.model.config.width),
+                                          0xF, dtype=np.uint8)
             self.view.draw_maze()
             self.model.generate_new_maze()
             self.view.buttons.get("regen").label = "Skip"
@@ -114,27 +127,11 @@ class DisplayScene(BaseScene):
             self.solve_step = 0
             self.solving = True
 
-    def _cmd_random_colors(self):
-        for color in self.view.colors:
-            self.view.colors[color] = random.randrange(0xFF000000, 0xFFFFFFFF)
-        self.render("maze", "path")
-
-    def skip_solve(self):
-        while self.solve_step < len(self.model.solve_steps):
-            self.view.draw_step(
-                self.model.solve_steps[self.solve_step - 1],
-                self.view.colors.get("gen") & 0x7FFFFFFF
-            )
-            self.gen_step += 1
-        self.solving = False
-        self.solve_step = 0
-        self.view.draw_ui()
-
     def update(self) -> None:
         if self.generating is True:
             if self.gen_step >= len(self.model.gen_steps):
+                self.view.draw_maze()
                 self.generating = False
-                self.gen_step = 0
                 self.setup_ui()
             else:
                 self.view.draw_step(
@@ -144,12 +141,12 @@ class DisplayScene(BaseScene):
 
         elif self.solving is True:
             if self.solve_step >= len(self.model.solve_steps):
+                self.view.draw_maze()
                 self.solving = False
-                self.solve_step = 0
                 self.setup_ui()
             else:
                 self.view.draw_step(self.model.solve_steps[self.solve_step],
-                                    self.view.colors.get("gen"))
+                                    self.view.colors.get("gen") & 0x7FFFFFFF)
                 self.solve_step += 1
 
         super().update()
@@ -158,8 +155,6 @@ class DisplayScene(BaseScene):
         if args:
             if "maze" in args:
                 self.view.draw_maze()
-            if "path" in args:
-                self.view.draw_path()
             if "ui" in args:
                 self.view.draw_ui()
             self.view.refresh_layers()
