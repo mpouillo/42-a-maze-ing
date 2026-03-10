@@ -105,6 +105,13 @@ class DisplayScene(BaseScene):
             self.view.layers.get("path").clear()
             return
 
+        if not self.model.valid_paths:
+            return
+
+        # Clamp current_path before using it
+        if self.current_path >= len(self.model.valid_paths):
+            self.current_path = 0
+
         self.view.draw_path(self.model.valid_paths[self.current_path])
         self.view.draw_endpoints()
 

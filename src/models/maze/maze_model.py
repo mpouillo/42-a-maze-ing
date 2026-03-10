@@ -23,7 +23,9 @@ class MazeModel:
         try:
             self.config = MazeConfig.from_env(config_file)
         except Exception as e:
-            sys.exit(f"Configuration error: {e}")
+            print(f"Configuration error: {e}")
+            sys.stdout.flush()
+            os._exit(1)
 
         # Components
         self.file_manager = MazeFileManager(self.config)
@@ -71,7 +73,7 @@ class MazeModel:
     def generate_new_maze(self) -> None:
         self.gen_steps = list(self.get_generation_steps())
         self.save_current_maze()
-        self.solve_steps = list(self.generator.bfs_opti(100))
+        self.solve_steps = list(self.generator.bfs_opti())
         self.valid_paths = sorted(self.generator.bfs_paths,
                                   key=lambda path: len(path))
         self.save_solution(self.valid_paths[0])

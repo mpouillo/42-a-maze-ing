@@ -1,8 +1,10 @@
 from collections import deque
+from heapq import heappush, heappop
 from random import randint, seed
-from typing import Any, List, Tuple, Optional, Deque, Dict, Generator
+from typing import Any, List, Tuple, Optional, Deque, Dict, Generator, Set
 from typing import TypeAlias
 import numpy as np
+from collections import deque, defaultdict
 from src.models.maze.maze_config import MazeConfig
 
 StepGenerator: TypeAlias = Generator[
@@ -147,7 +149,7 @@ class MazeGenerator:
     def close_deadend(
             self, maze: np.ndarray[Any, Any],
             row: int, col: int
-    ) -> StepGenerator:
+    ):
         """Fill a deadend by adding a wall to the only open side"""
         next_cell = (row, col)
         while (
@@ -233,7 +235,7 @@ class MazeGenerator:
         prev: Optional[Tuple[int, int]] = None
 
         while (row, col) != self.config.exit:
-            value: bool = (randint(0, 10) == 0)
+            value: bool = (randint(0, 4) == 0)
             curr = (row, col)
 
             if not (solved[row, col] & self.TOP) and (row - 1, col) != prev:
@@ -266,7 +268,6 @@ class MazeGenerator:
 
     def add_paths(self, solved: np.ndarray[Any, Any],
                   solution_str_len: int) -> np.ndarray[Any, Any]:
-        """Version bloquante qui consomme le générateur"""
         for _ in self.add_paths_steps(solved, solution_str_len):
             pass
         return self.maze
@@ -356,27 +357,280 @@ class MazeGenerator:
             neighbors.append((r, c - 1))
         return neighbors
 
-    def bfs_opti(self, max_paths=999):
+    def _heuristic(self, cell: Tuple[int, int]) -> int:
+        """Manhattan distance to exit."""
+        return (abs(cell[0] - self.config.exit[0])
+                + abs(cell[1] - self.config.exit[1]))
+
+    def bfs_opti(self, max_paths=10):
         self.initialize_visited()
         self.set_logo_as_visited()
         self.bfs_paths = []
         maze = self.solve_deadends()
 
-        discovered = {self.config.entry}
-        q = deque([(self.config.entry, [self.config.entry])])
+        for step in self.multi_path_search(maze, max_paths=max_paths):
+            yield step
 
-        while q:
-            curr, path = q.popleft()
+    def _yield_path(
+        self,
+        path: List[Tuple[int, int]],
+    ) -> Generator[Any, None, None]:
+        for i in range(1, len(path)):
+            yield ("fill", path[i - 1], path[i])
+        yield ("path_found", path[-1], path[-1])
 
-            if curr == self.config.exit:
-                self.bfs_paths.append(path)
-                if len(self.bfs_paths) >= max_paths:
-                    return
+    def _astar_with_forbidden_steps(
+        self,
+        maze: np.ndarray,
+        start: Tuple[int, int],
+        out_path: List[List[Tuple[int, int]]],
+    ) -> Generator[Any, None, None]:
+        exit_ = self.config.exit
+
+        open_heap: List[Tuple[int, int, Tuple[int, int], Optional[Tuple[int, int]]]] = []
+        heappush(open_heap, (self._heuristic(start), 0, start, None))
+
+        g_best: Dict[Tuple[int, int], int] = {start: 0}
+        came_from: Dict[Tuple[int, int], Optional[Tuple[int, int]]] = {}
+
+        while open_heap:
+            _, g, curr, parent = heappop(open_heap)
+
+            if curr in came_from:
+                continue
+            came_from[curr] = parent
+
+            if parent is not None:
+                yield ("fill", parent, curr)
+
+            if curr == exit_:
+                path: List[Tuple[int, int]] = []
+                node: Optional[Tuple[int, int]] = exit_
+                while node is not None:
+                    path.append(node)
+                    node = came_from[node]
+                path.reverse()
+                out_path.append(path)
+                for step in self._yield_path(path):
+                    yield step
+                return
+
+            for nxt in self.get_neighbors_open_opti(curr, maze):
+                if nxt in came_from:
+                    continue
+                new_g = g + 1
+                if new_g < g_best.get(nxt, 10**9):
+                    g_best[nxt] = new_g
+                    f_cost = new_g + self._heuristic(nxt)
+                    heappush(open_heap, (f_cost, new_g, nxt, curr))
+                    yield ("fill", curr, nxt)
+
+    def _astar_longest_steps(
+        self,
+        maze: np.ndarray,
+        out_path: List[List[Tuple[int, int]]],
+    ) -> Generator[Any, None, None]:
+        exit_ = self.config.exit
+        start = self.config.entry
+
+        open_heap: List[Tuple[int, Tuple[int, int], Optional[Tuple[int, int]]]] = []
+        heappush(open_heap, (0, start, None))
+
+        g_best: Dict[Tuple[int, int], int] = {start: 0}
+        came_from: Dict[Tuple[int, int], Optional[Tuple[int, int]]] = {}
+
+        while open_heap:
+            neg_g, curr, parent = heappop(open_heap)
+
+            if curr in came_from:
+                continue
+            came_from[curr] = parent
+
+            if parent is not None:
+                yield ("fill", parent, curr)
+
+            if curr == exit_:
+                path: List[Tuple[int, int]] = []
+                node: Optional[Tuple[int, int]] = exit_
+                while node is not None:
+                    path.append(node)
+                    node = came_from[node]
+                path.reverse()
+                out_path.append(path)
+                for step in self._yield_path(path):
+                    yield step
+                return
+
+            for nxt in self.get_neighbors_open_opti(curr, maze):
+                if nxt in came_from:
+                    continue
+                new_neg_g = neg_g - 1
+                if new_neg_g < g_best.get(nxt, 1):
+                    g_best[nxt] = new_neg_g
+                    heappush(open_heap, (new_neg_g, nxt, curr))
+                    yield ("fill", curr, nxt)
+
+    def _astar_target_length_steps(
+        self,
+        maze: np.ndarray,
+        target_len: int,
+        exclude: Set[Tuple[Tuple[int, int], ...]],
+        out_path: List[List[Tuple[int, int]]],
+    ) -> Generator[Any, None, None]:
+        exit_ = self.config.exit
+        start = self.config.entry
+
+        open_heap: List[Tuple[int, int, Tuple[int, int], Optional[Tuple[int, int]]]] = []
+        heappush(open_heap, (abs(target_len - self._heuristic(start)), 0, start, None))
+
+        g_best: Dict[Tuple[int, int], int] = {start: 0}
+        came_from: Dict[Tuple[int, int], Optional[Tuple[int, int]]] = {}
+
+        best_path: Optional[List[Tuple[int, int]]] = None
+        best_deviation = 10**9
+
+        while open_heap:
+            _, g, curr, parent = heappop(open_heap)
+
+            if curr in came_from:
+                continue
+            came_from[curr] = parent
+
+            if parent is not None:
+                yield ("fill", parent, curr)
+
+            if curr == exit_:
+                path: List[Tuple[int, int]] = []
+                node: Optional[Tuple[int, int]] = exit_
+                while node is not None:
+                    path.append(node)
+                    node = came_from[node]
+                path.reverse()
+
+                key = tuple(path)
+                deviation = abs(len(path) - target_len)
+                if key not in exclude and deviation < best_deviation:
+                    best_deviation = deviation
+                    best_path = path
+                if deviation == 0:
+                    break
                 continue
 
             for nxt in self.get_neighbors_open_opti(curr, maze):
-                if nxt not in discovered:
-                    discovered.add(nxt)
+                if nxt in came_from:
+                    continue
+                new_g = g + 1
+                if new_g < g_best.get(nxt, 10**9):
+                    g_best[nxt] = new_g
+                    estimated_total = new_g + self._heuristic(nxt)
+                    deviation = abs(estimated_total - target_len)
+                    heappush(open_heap, (deviation, new_g, nxt, curr))
                     yield ("fill", curr, nxt)
-                if nxt not in path:
-                    q.append((nxt, path + [nxt]))
+
+        if best_path is not None:
+            out_path.append(best_path)
+            for step in self._yield_path(best_path):
+                yield step
+
+    def _yen_fallback(
+        self,
+        maze: np.ndarray,
+        needed: int,
+    ) -> Generator[Any, None, None]:
+        if not self.bfs_paths:
+            return
+
+        candidates: List[Tuple[int, List[Tuple[int, int]]]] = []
+        candidate_set: Set[Tuple[Tuple[int, int], ...]] = {
+            tuple(p) for p in self.bfs_paths
+        }
+
+        while len(self.bfs_paths) < needed:
+            for k_path in list(self.bfs_paths):
+                for spur_idx in range(len(k_path) - 1):
+                    spur_node = k_path[spur_idx]
+                    root_path = k_path[:spur_idx + 1]
+
+                    spur_out: List[List[Tuple[int, int]]] = []
+                    for step in self._astar_with_forbidden_steps(
+                        maze, spur_node, spur_out
+                    ):
+                        yield step
+
+                    if not spur_out:
+                        continue
+
+                    total_path = root_path + spur_out[0][1:]
+                    total_key = tuple(total_path)
+
+                    if total_key not in candidate_set:
+                        candidate_set.add(total_key)
+                        heappush(candidates, (len(total_path), total_path))
+
+            if not candidates:
+                break
+
+            _, best = heappop(candidates)
+            self.bfs_paths.append(best)
+            for step in self._yield_path(best):
+                yield step
+
+    def multi_path_search(
+        self,
+        maze: np.ndarray,
+        max_paths: int = 5,
+    ) -> Generator[Any, None, None]:
+        self.bfs_paths = []
+        exclude: Set[Tuple[Tuple[int, int], ...]] = set()
+
+        first_out: List[List[Tuple[int, int]]] = []
+        for step in self._astar_with_forbidden_steps(
+            maze, self.config.entry, first_out
+        ):
+            yield step
+
+        if first_out:
+            first = first_out[0]
+            self.bfs_paths.append(first)
+            exclude.add(tuple(first))
+
+        longest_out: List[List[Tuple[int, int]]] = []
+        for step in self._astar_longest_steps(maze, longest_out):
+            yield step
+
+        longest = None
+        if longest_out and tuple(longest_out[0]) not in exclude:
+            longest = longest_out[0]
+            exclude.add(tuple(longest))
+
+        if longest is not None:
+            shortest_len  = len(first)
+            longest_len   = len(longest)
+            length_range  = longest_len - shortest_len
+
+            if length_range > 0:
+                percentiles = [0.25, 0.50, 0.75]
+                targets = [
+                    int(shortest_len + p * length_range)
+                    for p in percentiles
+                ]
+                for target in targets:
+                    path_out: List[List[Tuple[int, int]]] = []
+                    for step in self._astar_target_length_steps(
+                        maze, target, exclude, path_out
+                    ):
+                        yield step
+
+                    if path_out:
+                        path = path_out[0]
+                        self.bfs_paths.append(path)
+                        exclude.add(tuple(path))
+
+            self.bfs_paths.append(longest)
+
+        if len(self.bfs_paths) < 2:
+            for step in self._yen_fallback(maze, needed=2):
+                yield step
+
+        for path in self.bfs_paths:
+            yield ("path_found", path[-1], path[-1])
