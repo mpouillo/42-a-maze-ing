@@ -25,7 +25,7 @@ class SquareRenderer(BaseRenderer):
 
         self.cell_size = max(1, min(available_w // cols, available_h // rows))
         if self.wall_size > 1 and self.cell_size <= self.wall_size * 2:
-            self.wall_size = max(1, self.cell_size // 2)
+            self.wall_size = max(1, self.wall_size - 1)
             self.compute_scales()
 
         self.maze_w = cols * self.cell_size + self.wall_size
