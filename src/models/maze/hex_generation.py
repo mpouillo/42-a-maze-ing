@@ -17,11 +17,11 @@ class HexMazeGenerator:
     def __init__(self, config: MazeConfig) -> None:
         self.config = config
 
-        self.height = config.height
-        self.width = config.width
-        self.entry = config.entry
-        self.exit = config.exit
-        self.perfect = config.perfect
+        self.config.height = config.height
+        self.config.width = config.width
+        self.config.entry = config.entry
+        self.config.exit = config.exit
+        self.config.perfect = config.perfect
 
         if config.seed is not None:
             seed(config.seed)
@@ -46,10 +46,10 @@ class HexMazeGenerator:
         }
 
     def initialize_maze(self) -> None:
-        self.maze = np.full((self.height, self.width), 0x3F, dtype=np.uint8)
+        self.maze = np.full((self.config.height, self.config.width), 0x3F, dtype=np.uint8)
 
     def initialize_visited(self) -> None:
-        self.visited = np.zeros((self.height, self.width), dtype=bool)
+        self.visited = np.zeros((self.config.height, self.config.width), dtype=bool)
 
     def set_logo_as_visited(self) -> None:
         """Mark logo area as visited so the maze generates around it"""
@@ -81,7 +81,7 @@ class HexMazeGenerator:
 
         for dr, dc in offsets.keys():
             nr, nc = r + dr, c + dc
-            if 0 <= nr < self.height and 0 <= nc < self.width:
+            if 0 <= nr < self.config.height and 0 <= nc < self.config.width:
                 if not self.visited[nr, nc]:
                     neighbors.append((nr, nc))
 
@@ -106,13 +106,13 @@ class HexMazeGenerator:
         self.initialize_visited()
         self.set_logo_as_visited()
 
-        if self.visited[self.entry]:
-            raise ValueError(f"ENTRY {self.entry} inside the logo area")
-        if self.visited[self.exit]:
-            raise ValueError(f"EXIT {self.exit} inside the logo area")
+        if self.visited[self.config.entry]:
+            raise ValueError(f"ENTRY {self.config.entry} inside the logo area")
+        if self.visited[self.config.exit]:
+            raise ValueError(f"EXIT {self.config.exit} inside the logo area")
 
-        self.visited[self.entry] = True
-        stack: List[Tuple[int, int]] = [self.entry]
+        self.visited[self.config.entry] = True
+        stack: List[Tuple[int, int]] = [self.config.entry]
 
         while stack:
             curr_cell = stack.pop()
@@ -150,8 +150,8 @@ class HexMazeGenerator:
         next_cell: Tuple[int, int] = (row, col)
 
         while (
-            next_cell != self.entry
-            and next_cell != self.exit
+            next_cell != self.config.entry
+            and next_cell != self.config.exit
             and self.count_walls(next_cell[0], next_cell[1], maze) == 5
         ):
             row, col = next_cell
@@ -166,7 +166,7 @@ class HexMazeGenerator:
             for (dr, dc), (mask, neighbor_mask) in offsets.items():
                 if (cell_val & mask) == 0:
                     nr, nc = row + dr, col + dc
-                    if 0 <= nr < self.height and 0 <= nc < self.width:
+                    if 0 <= nr < self.config.height and 0 <= nc < self.config.width:
                         # Close the wall
                         maze[row, col] |= mask
                         maze[nr, nc] |= neighbor_mask
@@ -184,14 +184,14 @@ class HexMazeGenerator:
         """
         maze = self.maze.copy()
 
-        yield maze, self.entry
+        yield maze, self.config.entry
 
         while True:
             found_deadend = False
-            for row in range(self.height):
-                for col in range(self.width):
-                    if ((row, col) != self.entry and
-                            (row, col) != self.exit and
+            for row in range(self.config.height):
+                for col in range(self.config.width):
+                    if ((row, col) != self.config.entry and
+                            (row, col) != self.config.exit and
                             self.count_walls(row, col, maze) == 5):
                         for maze, cell in self.close_deadend(maze, row, col):
                             yield maze, cell
@@ -214,15 +214,15 @@ class HexMazeGenerator:
         solution_str_len: int,
     ):
 
-        row, col = self.entry
+        row, col = self.config.entry
         solve_size = max(0, solution_str_len)
         added_path = False
         number_path = 0
         step = 0
-        next_pos: Tuple[int, int] = self.entry
+        next_pos: Tuple[int, int] = self.config.entry
         prev: Optional[Tuple[int, int]] = None
 
-        while (row, col) != self.exit:
+        while (row, col) != self.config.exit:
             value: bool = (randint(0, 3) == 0)
 
             offsets = (
@@ -236,7 +236,7 @@ class HexMazeGenerator:
             for (dr, dc), (mask, _) in offsets.items():
                 nr, nc = row + dr, col + dc
                 if (current_solved_val & mask) == 0:
-                    if 0 <= nr < self.height and 0 <= nc < self.width:
+                    if 0 <= nr < self.config.height and 0 <= nc < self.config.width:
                         if (nr, nc) != prev:
                             next_pos = (nr, nc)
                             break
@@ -287,7 +287,7 @@ class HexMazeGenerator:
             # maybe we can open it to creating a loop?
             if (cell_val & mask) != 0:
                 nr, nc = row + dr, col + dc
-                if 0 <= nr < self.height and 0 <= nc < self.width:
+                if 0 <= nr < self.config.height and 0 <= nc < self.config.width:
                     if self.maze[nr, nc] != self.FULL:
                         candidates.append((nr, nc))
 
@@ -309,7 +309,7 @@ class HexMazeGenerator:
         for (dr, dc), (mask, _) in offsets.items():
             if (cell_val & mask) == 0:
                 nr, nc = r + dr, c + dc
-                if 0 <= nr < self.height and 0 <= nc < self.width:
+                if 0 <= nr < self.config.height and 0 <= nc < self.config.width:
                     neighbors.append((nr, nc))
 
         return neighbors
@@ -319,18 +319,65 @@ class HexMazeGenerator:
         self.set_logo_as_visited()
         self.bfs_paths = []
 
-        q = deque([(self.entry, [self.entry])])
+        discovered = {self.config.entry}
+        q = deque([(self.config.entry, [self.config.entry])])
 
         while q:
             curr, path = q.popleft()
 
-            if curr == self.exit:
+            if curr == self.config.exit:
                 self.bfs_paths.append(path)
                 if len(self.bfs_paths) >= max_paths:
                     return
                 continue
 
             for nxt in self.get_neighbors_open(curr):
-                if nxt not in path:
+                if nxt not in discovered:
+                    discovered.add(nxt)
                     yield ("fill", curr, nxt)
+                if nxt not in path:
                     q.append((nxt, path + [nxt]))
+
+    def get_neighbors_open_opti(
+        self,
+        cell: Tuple[int, int],
+        maze,
+    ) -> List[Tuple[int, int]]:
+        r, c = cell
+        neighbors: List[Tuple[int, int]] = []
+
+        offsets = self._even_neighbors if r % 2 == 0 else self._odd_neighbors
+        cell_val = int(maze[r, c])
+
+        for (dr, dc), (mask, _) in offsets.items():
+            if (cell_val & mask) == 0:
+                nr, nc = r + dr, c + dc
+                if 0 <= nr < self.config.height and 0 <= nc < self.config.width:
+                    neighbors.append((nr, nc))
+        return neighbors
+
+    def bfs_opti(self, max_paths=999):
+        self.initialize_visited()
+        self.set_logo_as_visited()
+        self.bfs_paths = []
+        maze = self.solve_deadends()
+
+        discovered = {self.config.entry}
+        q = deque([(self.config.entry, [self.config.entry])])
+
+        while q:
+            curr, path = q.popleft()
+
+            if curr == self.config.exit:
+                self.bfs_paths.append(path)
+                if len(self.bfs_paths) >= max_paths:
+                    return
+                continue
+
+            for nxt in self.get_neighbors_open_opti(curr, maze):
+                if nxt not in discovered:
+                    discovered.add(nxt)
+                    yield ("fill", curr, nxt)
+                if nxt not in path:
+                    q.append((nxt, path + [nxt]))
+

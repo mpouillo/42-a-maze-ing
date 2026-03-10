@@ -150,7 +150,6 @@ class MazeFileManager:
         is_even = (row % 2 == 0)
 
         # Directions: (d_row, d_col, wall_mask, char_code)
-        # Note: offsets depend on row parity
         if is_even:
             moves = [
                 (-1, 0,  gen.TOP_RIGHT,    'A'),
@@ -172,9 +171,7 @@ class MazeFileManager:
 
         for dr, dc, mask, char in moves:
             nr, nc = row + dr, col + dc
-            # Check boundaries
-            if 0 <= nr < gen.height and 0 <= nc < gen.width:
-                # Check walls and backtracking
+            if 0 <= nr < gen.config.height and 0 <= nc < gen.config.width:
                 if (val & mask) == 0 and (nr, nc) != prev:
                     return (nr, nc, char)
 

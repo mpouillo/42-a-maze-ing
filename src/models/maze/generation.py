@@ -21,20 +21,20 @@ class MazeGenerator:
     def __init__(self, config: MazeConfig) -> None:
         self.config = config
 
-        self.height = config.height
-        self.width = config.width
-        self.entry = config.entry
-        self.exit = config.exit
-        self.perfect = config.perfect
+        self.config.height = config.height
+        self.config.width = config.width
+        self.config.entry = config.entry
+        self.config.exit = config.exit
+        self.config.perfect = config.perfect
 
         if config.seed is not None:
             seed(config.seed)
 
     def initialize_maze(self) -> None:
-        self.maze = np.full((self.height, self.width), 0xF, dtype=np.uint8)
+        self.maze = np.full((self.config.height, self.config.width), 0xF, dtype=np.uint8)
 
     def initialize_visited(self) -> None:
-        self.visited = np.zeros((self.height, self.width), dtype=bool)
+        self.visited = np.zeros((self.config.height, self.config.width), dtype=bool)
 
     def set_logo_as_visited(self) -> None:
         """Mark logo area as visited so the maze generates around it"""
@@ -63,13 +63,13 @@ class MazeGenerator:
         if row > 0 and not self.visited[row - 1, col]:
             neighbors.append((row - 1, col))
         # Down
-        if row < self.height - 1 and not self.visited[row + 1, col]:
+        if row < self.config.height - 1 and not self.visited[row + 1, col]:
             neighbors.append((row + 1, col))
         # Left
         if col > 0 and not self.visited[row, col - 1]:
             neighbors.append((row, col - 1))
         # Right
-        if col < self.width - 1 and not self.visited[row, col + 1]:
+        if col < self.config.width - 1 and not self.visited[row, col + 1]:
             neighbors.append((row, col + 1))
 
         return neighbors
@@ -98,13 +98,13 @@ class MazeGenerator:
         self.initialize_visited()
         self.set_logo_as_visited()
 
-        if self.visited[self.entry]:
-            raise ValueError(f"ENTRY {self.entry} inside the logo area")
-        if self.visited[self.exit]:
-            raise ValueError(f"EXIT {self.exit} inside the logo area")
+        if self.visited[self.config.entry]:
+            raise ValueError(f"ENTRY {self.config.entry} inside the logo area")
+        if self.visited[self.config.exit]:
+            raise ValueError(f"EXIT {self.config.exit} inside the logo area")
 
-        self.visited[self.entry] = True
-        stack: List[Tuple[int, int]] = [self.entry]
+        self.visited[self.config.entry] = True
+        stack: List[Tuple[int, int]] = [self.config.entry]
 
         while stack:
             curr_cell = stack.pop()
@@ -148,8 +148,8 @@ class MazeGenerator:
         """Fill a deadend by adding a wall to the only open side"""
         next_cell = (row, col)
         while (
-            next_cell != self.entry
-            and next_cell != self.exit
+            next_cell != self.config.entry
+            and next_cell != self.config.exit
             and self.count_walls(next_cell[0], next_cell[1], maze) == 3
         ):
             row, col = next_cell
@@ -163,13 +163,13 @@ class MazeGenerator:
 
             elif not (cell_val & self.RIGHT):
                 maze[row, col] |= self.RIGHT
-                if col < self.width - 1:
+                if col < self.config.width - 1:
                     maze[row, col + 1] |= self.LEFT
                     next_cell = (row, col + 1)
 
             elif not (cell_val & self.BOTTOM):
                 maze[row, col] |= self.BOTTOM
-                if row < self.height - 1:
+                if row < self.config.height - 1:
                     maze[row + 1, col] |= self.TOP
                     next_cell = (row + 1, col)
 
@@ -188,14 +188,14 @@ class MazeGenerator:
         """
         maze = self.maze.copy()
 
-        yield maze, self.entry
+        yield maze, self.config.entry
 
         while True:
             found_deadend = False
-            for row in range(self.height):
-                for col in range(self.width):
-                    if ((row, col) != self.entry and
-                            (row, col) != self.exit and
+            for row in range(self.config.height):
+                for col in range(self.config.width):
+                    if ((row, col) != self.config.entry and
+                            (row, col) != self.config.exit and
                             self.count_walls(row, col, maze) == 3):
                         for maze, cell in self.close_deadend(maze, row, col):
                             yield maze, cell
@@ -218,18 +218,18 @@ class MazeGenerator:
     def add_paths_steps(
         self, solved: np.ndarray[Any, Any], solution_str_len: int
     ) -> StepGenerator:
-        row, col = self.entry
+        row, col = self.config.entry
 
         solve_size = max(0, solution_str_len)
 
         added_path = False
         number_path = 0
         step = 0
-        next_pos: Tuple[int, int] = self.entry
+        next_pos: Tuple[int, int] = self.config.entry
         prev: Optional[Tuple[int, int]] = None
 
-        while (row, col) != self.exit:
-            value: bool = (randint(0, 3) == 0)
+        while (row, col) != self.config.exit:
+            value: bool = (randint(0, 10) == 0)
             curr = (row, col)
 
             if not (solved[row, col] & self.TOP) and (row - 1, col) != prev:
@@ -276,8 +276,8 @@ class MazeGenerator:
 
         def ok(r: int, c: int) -> bool:
             return (
-                0 <= r < self.height
-                and 0 <= c < self.width
+                0 <= r < self.config.height
+                and 0 <= c < self.config.width
                 and self.maze[r, c] != self.FULL
             )
 
@@ -305,9 +305,9 @@ class MazeGenerator:
 
         if (self.maze[r, c] & self.TOP) == 0 and r > 0:
             neighbors.append((r - 1, c))
-        if (self.maze[r, c] & self.RIGHT) == 0 and c < self.width - 1:
+        if (self.maze[r, c] & self.RIGHT) == 0 and c < self.config.width - 1:
             neighbors.append((r, c + 1))
-        if (self.maze[r, c] & self.BOTTOM) == 0 and r < self.height - 1:
+        if (self.maze[r, c] & self.BOTTOM) == 0 and r < self.config.height - 1:
             neighbors.append((r + 1, c))
         if (self.maze[r, c] & self.LEFT) == 0 and c > 0:
             neighbors.append((r, c - 1))
@@ -319,18 +319,60 @@ class MazeGenerator:
         self.set_logo_as_visited()
         self.bfs_paths = []
 
-        q = deque([(self.entry, [self.entry])])
+        discovered = {self.config.entry}
+        q = deque([(self.config.entry, [self.config.entry])])
 
         while q:
             curr, path = q.popleft()
 
-            if curr == self.exit:
+            if curr == self.config.exit:
                 self.bfs_paths.append(path)
                 if len(self.bfs_paths) >= max_paths:
                     return
                 continue
 
             for nxt in self.get_neighbors_open(curr):
-                if nxt not in path:
+                if nxt not in discovered:
+                    discovered.add(nxt)
                     yield ("fill", curr, nxt)
+                if nxt not in path:
+                    q.append((nxt, path + [nxt]))
+
+    def get_neighbors_open_opti(self, cell: Tuple[int, int], maze):
+        r, c = cell
+        neighbors: List[Tuple[int, int]] = []
+
+        if (maze[r, c] & self.TOP) == 0 and r > 0:
+            neighbors.append((r - 1, c))
+        if (maze[r, c] & self.RIGHT) == 0 and c < self.config.width - 1:
+            neighbors.append((r, c + 1))
+        if (maze[r, c] & self.BOTTOM) == 0 and r < self.config.height - 1:
+            neighbors.append((r + 1, c))
+        if (maze[r, c] & self.LEFT) == 0 and c > 0:
+            neighbors.append((r, c - 1))
+        return neighbors
+
+    def bfs_opti(self, max_paths=999):
+        self.initialize_visited()
+        self.set_logo_as_visited()
+        self.bfs_paths = []
+        maze = self.solve_deadends()
+
+        discovered = {self.config.entry}
+        q = deque([(self.config.entry, [self.config.entry])])
+
+        while q:
+            curr, path = q.popleft()
+
+            if curr == self.config.exit:
+                self.bfs_paths.append(path)
+                if len(self.bfs_paths) >= max_paths:
+                    return
+                continue
+
+            for nxt in self.get_neighbors_open_opti(curr, maze):
+                if nxt not in discovered:
+                    discovered.add(nxt)
+                    yield ("fill", curr, nxt)
+                if nxt not in path:
                     q.append((nxt, path + [nxt]))
