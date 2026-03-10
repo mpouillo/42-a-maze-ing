@@ -9,14 +9,14 @@ class BaseRenderer:
     def __init__(self, app, model: MazeModel) -> None:
         self.app = app
         self.model = model
-        self.pad_w = 20
-        self.pad_h = 100
+        self.pad_w = 40
+        self.pad_h = 150
         self.layers = {}
         self.buttons = {}
 
         self.ui_style = {
             "btn_width": 300,
-            "btn_height": self.pad_h // 2,
+            "btn_height": self.pad_h // 5 * 2,
             "btn_spacing": 50,
             "btn_bg": 0xFF333333,
             "btn_text": 0xFFFFFFFF,

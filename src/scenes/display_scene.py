@@ -52,6 +52,21 @@ class DisplayScene(BaseScene):
             9999, btn_width, btn_height, self._cmd_open_menu
         )
 
+        self.view.add_button(
+            "colors", "rdm wall colors",
+            self.view.pad_w,
+            self.app.window_height - (self.view.pad_h + btn_height) // 2,
+            9999, btn_width, btn_height, self._cmd_random_wall_colors
+        )
+
+    def _cmd_random_wall_colors(self):
+        if self.generating:
+            return
+
+        import random
+        self.view.colors["walls"] = random.randrange(0xFF000000, 0xFFFFFFFF)
+        self.view.draw_maze()
+
     def _cmd_generate_maze(self):
         self.solving = False
 
@@ -101,11 +116,11 @@ class DisplayScene(BaseScene):
         canvas.clear()
         self.view.draw_text(
             canvas, self.view.offset_x,
-            self.app.window_height - self.view.pad_h + 20,
+            self.app.window_height - self.view.pad_h,
             (f"Displaying path: {self.current_path + 1}/"
              f"{len(self.model.valid_paths)}"
              f"({len(self.model.valid_paths[self.current_path])})"),
-            0xFFFFFFFF, 2
+            0xFFFFFFFF, 3
         )
 
     def update(self) -> None:
@@ -133,9 +148,11 @@ class DisplayScene(BaseScene):
         ):
             self.view.buttons.get("solve").disable()
             self.view.buttons.get("paths").disable()
+            self.view.buttons.get("colors").disable()
         else:
             self.view.buttons.get("solve").enable()
             self.view.buttons.get("paths").enable()
+            self.view.buttons.get("colors").enable()
 
         super().update()
 

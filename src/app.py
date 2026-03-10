@@ -8,8 +8,8 @@ from typing import Any
 class Application:
     def __init__(self, config_file: str) -> None:
         self.config_file = config_file
-        self.window_width = 1000
-        self.window_height = 1000
+        self.window_width = 1200
+        self.window_height = 1200
 
         self.frame_time = 1/60
         self.last_frame = 0
