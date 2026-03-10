@@ -28,7 +28,7 @@ class HexRenderer(BaseRenderer):
 
         self.cell_size = max(1, int(min(s_x, s_y)))
         if self.wall_size > 1 and self.cell_size <= self.wall_size * 2:
-            self.wall_size = max(1, self.cell_size // 2)
+            self.wall_size = max(1, self.wall_size - 1)
             self.compute_scales()
 
         self.hex_w = math.sqrt(3) * self.cell_size
