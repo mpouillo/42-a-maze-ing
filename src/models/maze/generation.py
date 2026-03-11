@@ -32,19 +32,21 @@ class MazeGenerator:
     def initialize_maze(self) -> None:
         if self.config.seed is not None:
             seed(self.config.seed)
-        self.maze = np.full((self.config.height, self.config.width),
-                            0xF, dtype=np.uint8)
+        self.maze = np.full(
+            (self.config.height, self.config.width), 0xF, dtype=np.uint8
+        )
 
     def initialize_visited(self) -> None:
-        self.visited = np.zeros((self.config.height, self.config.width),
-                                dtype=bool)
+        self.visited = np.zeros(
+            (self.config.height, self.config.width), dtype=bool
+        )
 
     def set_logo_as_visited(self) -> None:
         """Mark logo area as visited so the maze generates around it"""
         with open("src/models/maze/logo.txt", "r") as f:
             logo = f.read()
 
-        logo_rows = list(logo.strip().split('\n'))
+        logo_rows = list(logo.strip().split("\n"))
         if not logo_rows:
             return
 
@@ -53,11 +55,12 @@ class MazeGenerator:
 
         for row in range(0, len(logo_rows)):
             for col in range(0, len(logo_rows[0])):
-                if logo_rows[row][col] == '1':
+                if logo_rows[row][col] == "1":
                     self.visited[row + center_row, col + center_col] = True
 
-    def get_unvisited_neighbors(self, cell: Tuple[int, int])\
-            -> List[Tuple[int, int]]:
+    def get_unvisited_neighbors(
+        self, cell: Tuple[int, int]
+    ) -> List[Tuple[int, int]]:
         """Return list of valid unvisited neighbors"""
         row, col = cell
         neighbors = []
@@ -77,24 +80,25 @@ class MazeGenerator:
 
         return neighbors
 
-    def remove_wall(self, current: Tuple[int, int],
-                    next_cell: Tuple[int, int]) -> None:
+    def remove_wall(
+        self, current: Tuple[int, int], next_cell: Tuple[int, int]
+    ) -> None:
         """Remove walls between two adjacent cells"""
         cr, cc = current
         nr, nc = next_cell
 
         if nr < cr:
-            self.maze[current] &= 0XFF & ~self.TOP
-            self.maze[next_cell] &= 0XFF & ~self.BOTTOM
+            self.maze[current] &= 0xFF & ~self.TOP
+            self.maze[next_cell] &= 0xFF & ~self.BOTTOM
         elif nr > cr:
-            self.maze[current] &= 0XFF & ~self.BOTTOM
-            self.maze[next_cell] &= 0XFF & ~self.TOP
+            self.maze[current] &= 0xFF & ~self.BOTTOM
+            self.maze[next_cell] &= 0xFF & ~self.TOP
         elif nc < cc:
-            self.maze[current] &= 0XFF & ~self.LEFT
-            self.maze[next_cell] &= 0XFF & ~self.RIGHT
+            self.maze[current] &= 0xFF & ~self.LEFT
+            self.maze[next_cell] &= 0xFF & ~self.RIGHT
         elif nc > cc:
-            self.maze[current] &= 0XFF & ~self.RIGHT
-            self.maze[next_cell] &= 0XFF & ~self.LEFT
+            self.maze[current] &= 0xFF & ~self.RIGHT
+            self.maze[next_cell] &= 0xFF & ~self.LEFT
 
     def generate_steps(self) -> Generator[Any, None, None]:
         self.initialize_maze()
@@ -129,8 +133,9 @@ class MazeGenerator:
             pass
         return self.maze
 
-    def count_walls(self, row: int, col: int,
-                    maze: np.ndarray[Any, Any]) -> int:
+    def count_walls(
+        self, row: int, col: int, maze: np.ndarray[Any, Any]
+    ) -> int:
         """Count how many walls a specific cell has"""
         cell_val = maze[row, col]
         count = 0
@@ -145,10 +150,8 @@ class MazeGenerator:
         return count
 
     def close_deadend(
-            self, maze: np.ndarray[Any, Any],
-            row: int, col: int
-    ) -> Generator[Tuple[np.ndarray[Any, Any],
-                         Tuple[int, int]], None, None]:
+        self, maze: np.ndarray[Any, Any], row: int, col: int
+    ) -> Generator[Tuple[np.ndarray[Any, Any], Tuple[int, int]], None, None]:
         """Fill a deadend by adding a wall to the only open side"""
         next_cell = (row, col)
         while (
@@ -185,9 +188,8 @@ class MazeGenerator:
             yield maze, (row, col)
 
     def solve_deadends_steps(
-        self
-    ) -> Generator[Tuple[np.ndarray[Any, Any],
-                         Tuple[int, int]], None, None]:
+        self,
+    ) -> Generator[Tuple[np.ndarray[Any, Any], Tuple[int, int]], None, None]:
         """
         Removes dead ends to find the solution.
         """
@@ -200,9 +202,11 @@ class MazeGenerator:
             for row in range(self.config.height):
                 for col in range(self.config.width):
 
-                    if ((row, col) != self.config.entry and
-                            (row, col) != self.config.exit and
-                            self.count_walls(row, col, maze) == 3):
+                    if (
+                        (row, col) != self.config.entry
+                        and (row, col) != self.config.exit
+                        and self.count_walls(row, col, maze) == 3
+                    ):
                         for maze, cell in self.close_deadend(maze, row, col):
                             yield maze, cell
                         found_deadend = True
@@ -235,14 +239,18 @@ class MazeGenerator:
         prev: Optional[Tuple[int, int]] = None
 
         while (row, col) != self.config.exit:
-            value: bool = (randint(0, 4) == 0)
+            value: bool = randint(0, 4) == 0
             curr = (row, col)
 
             if not (solved[row, col] & self.TOP) and (row - 1, col) != prev:
                 next_pos = (row - 1, col)
-            elif not (solved[row, col] & self.RIGHT) and (row, col+1) != prev:
+            elif (
+                not (solved[row, col] & self.RIGHT) and (row, col + 1) != prev
+            ):
                 next_pos = (row, col + 1)
-            elif not (solved[row, col] & self.BOTTOM) and (row+1, col) != prev:
+            elif (
+                not (solved[row, col] & self.BOTTOM) and (row + 1, col) != prev
+            ):
                 next_pos = (row + 1, col)
             elif not (solved[row, col] & self.LEFT) and (row, col - 1) != prev:
                 next_pos = (row, col - 1)
@@ -266,8 +274,9 @@ class MazeGenerator:
             else:
                 added_path = False
 
-    def add_paths(self, solved: np.ndarray[Any, Any],
-                  solution_str_len: int) -> np.ndarray[Any, Any]:
+    def add_paths(
+        self, solved: np.ndarray[Any, Any], solution_str_len: int
+    ) -> np.ndarray[Any, Any]:
         for _ in self.add_paths_steps(solved, solution_str_len):
             pass
         return self.maze
@@ -343,8 +352,9 @@ class MazeGenerator:
                 if nxt not in path:
                     q.append((nxt, path + [nxt]))
 
-    def get_neighbors_open_opti(self, cell: Tuple[int, int],
-                                maze: np.ndarray[Any, Any]) -> list[Any]:
+    def get_neighbors_open_opti(
+        self, cell: Tuple[int, int], maze: np.ndarray[Any, Any]
+    ) -> list[Any]:
         r, c = cell
         neighbors: List[Tuple[int, int]] = []
 
@@ -360,8 +370,9 @@ class MazeGenerator:
 
     def _heuristic(self, cell: Tuple[int, int]) -> int:
         """Manhattan distance to exit."""
-        return (abs(cell[0] - self.config.exit[0])
-                + abs(cell[1] - self.config.exit[1]))
+        return abs(cell[0] - self.config.exit[0]) + abs(
+            cell[1] - self.config.exit[1]
+        )
 
     def bfs_opti(self) -> StepGenerator:
         self.initialize_visited()
@@ -380,8 +391,9 @@ class MazeGenerator:
         exit_ = self.config.exit
         start = self.config.entry
 
-        open_heap: List[Tuple[int, int, Tuple[int, int],
-                              Optional[Tuple[int, int]]]] = []
+        open_heap: List[
+            Tuple[int, int, Tuple[int, int], Optional[Tuple[int, int]]]
+        ] = []
         heappush(open_heap, (self._heuristic(start), 0, start, None))
 
         g_best: Dict[Tuple[int, int], int] = {start: 0}
@@ -464,10 +476,13 @@ class MazeGenerator:
         exit_ = self.config.exit
         start = self.config.entry
 
-        open_heap: List[Tuple[int, int, Tuple[int, int],
-                              Optional[Tuple[int, int]]]] = []
-        heappush(open_heap, (abs(target_len - self._heuristic(start)),
-                             0, start, None))
+        open_heap: List[
+            Tuple[int, int, Tuple[int, int], Optional[Tuple[int, int]]]
+        ] = []
+        heappush(
+            open_heap,
+            (abs(target_len - self._heuristic(start)), 0, start, None),
+        )
 
         g_best: Dict[Tuple[int, int], int] = {start: 0}
         came_from: Dict[Tuple[int, int], Optional[Tuple[int, int]]] = {}
@@ -521,9 +536,7 @@ class MazeGenerator:
         exclude: Set[Tuple[Tuple[int, int], ...]] = set()
 
         first_out: List[List[Tuple[int, int]]] = []
-        for step in self._astar_with_forbidden_steps(
-            maze, first_out
-        ):
+        for step in self._astar_with_forbidden_steps(maze, first_out):
             yield step
 
         if first_out:
@@ -548,8 +561,7 @@ class MazeGenerator:
             if length_range > 0:
                 percentiles = [0.25, 0.50, 0.75]
                 targets = [
-                    int(shortest_len + p * length_range)
-                    for p in percentiles
+                    int(shortest_len + p * length_range) for p in percentiles
                 ]
                 for target in targets:
                     path_out: List[List[Tuple[int, int]]] = []

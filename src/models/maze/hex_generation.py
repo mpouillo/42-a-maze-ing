@@ -31,7 +31,7 @@ class HexMazeGenerator:
             (1, 0): (self.BOTTOM_RIGHT, self.TOP_LEFT),
             (1, -1): (self.BOTTOM_LEFT, self.TOP_RIGHT),
             (0, -1): (self.LEFT, self.RIGHT),
-            (-1, -1): (self.TOP_LEFT, self.BOTTOM_RIGHT)
+            (-1, -1): (self.TOP_LEFT, self.BOTTOM_RIGHT),
         }
 
         self._odd_neighbors = {
@@ -40,7 +40,7 @@ class HexMazeGenerator:
             (1, 1): (self.BOTTOM_RIGHT, self.TOP_LEFT),
             (1, 0): (self.BOTTOM_LEFT, self.TOP_RIGHT),
             (0, -1): (self.LEFT, self.RIGHT),
-            (-1, 0): (self.TOP_LEFT, self.BOTTOM_RIGHT)
+            (-1, 0): (self.TOP_LEFT, self.BOTTOM_RIGHT),
         }
 
     def initialize_maze(self) -> None:
@@ -63,7 +63,7 @@ class HexMazeGenerator:
         except FileNotFoundError:
             return
 
-        logo_rows = list(logo.strip().split('\n'))
+        logo_rows = list(logo.strip().split("\n"))
         if not logo_rows:
             return
 
@@ -72,11 +72,12 @@ class HexMazeGenerator:
 
         for row in range(len(logo_rows)):
             for col in range(len(logo_rows[0])):
-                if logo_rows[row][col] == '1':
+                if logo_rows[row][col] == "1":
                     self.visited[row + center_row, col + center_col] = True
 
-    def get_unvisited_neighbors(self, cell: Tuple[int, int])\
-            -> List[Tuple[int, int]]:
+    def get_unvisited_neighbors(
+        self, cell: Tuple[int, int]
+    ) -> List[Tuple[int, int]]:
         """Return list of valid unvisited neighbors"""
         r, c = cell
         neighbors = []
@@ -91,8 +92,9 @@ class HexMazeGenerator:
 
         return neighbors
 
-    def remove_wall(self, current: Tuple[int, int],
-                    next_cell: Tuple[int, int]) -> None:
+    def remove_wall(
+        self, current: Tuple[int, int], next_cell: Tuple[int, int]
+    ) -> None:
         """Remove walls between two adjacent cells"""
         cr, cc = current
         nr, nc = next_cell
@@ -138,12 +140,13 @@ class HexMazeGenerator:
             pass
         return self.maze
 
-    def count_walls(self, row: int, col: int,
-                    maze: np.ndarray[Any, Any]) -> int:
+    def count_walls(
+        self, row: int, col: int, maze: np.ndarray[Any, Any]
+    ) -> int:
         """Count how many walls a specific cell has"""
         cell_val = maze[row, col]
         # Count set bits efficiently
-        return bin(cell_val & self.FULL).count('1')
+        return bin(cell_val & self.FULL).count("1")
 
     def close_deadend(
         self,
@@ -171,8 +174,8 @@ class HexMazeGenerator:
                 if (cell_val & mask) == 0:
                     nr, nc = row + dr, col + dc
                     if 0 <= nr < self.config.height and (
-                            0 <= nc < self.config.width
-                            ):
+                        0 <= nc < self.config.width
+                    ):
                         maze[row, col] |= mask
                         maze[nr, nc] |= neighbor_mask
                         next_cell = (nr, nc)
@@ -195,9 +198,11 @@ class HexMazeGenerator:
             found_deadend = False
             for row in range(self.config.height):
                 for col in range(self.config.width):
-                    if ((row, col) != self.config.entry and
-                            (row, col) != self.config.exit and
-                            self.count_walls(row, col, maze) == 5):
+                    if (
+                        (row, col) != self.config.entry
+                        and (row, col) != self.config.exit
+                        and self.count_walls(row, col, maze) == 5
+                    ):
                         for maze, cell in self.close_deadend(maze, row, col):
                             yield maze, cell
                         found_deadend = True
@@ -228,7 +233,7 @@ class HexMazeGenerator:
         prev: Optional[Tuple[int, int]] = None
 
         while (row, col) != self.config.exit:
-            value: bool = (randint(0, 3) == 0)
+            value: bool = randint(0, 3) == 0
 
             offsets = (
                 self._even_neighbors if row % 2 == 0 else self._odd_neighbors
@@ -241,8 +246,10 @@ class HexMazeGenerator:
             for (dr, dc), (mask, _) in offsets.items():
                 nr, nc = row + dr, col + dc
                 if (current_solved_val & mask) == 0:
-                    if 0 <= nr < self.config.height and\
-                          0 <= nc < self.config.width:
+                    if (
+                        0 <= nr < self.config.height
+                        and 0 <= nc < self.config.width
+                    ):
                         if (nr, nc) != prev:
                             next_pos = (nr, nc)
                             break
@@ -294,7 +301,8 @@ class HexMazeGenerator:
             if (cell_val & mask) != 0:
                 nr, nc = row + dr, col + dc
                 if 0 <= nr < self.config.height and (
-                        0 <= nc < self.config.width):
+                    0 <= nc < self.config.width
+                ):
                     if self.maze[nr, nc] != self.FULL:
                         candidates.append((nr, nc))
 
@@ -317,7 +325,8 @@ class HexMazeGenerator:
             if (cell_val & mask) == 0:
                 nr, nc = r + dr, c + dc
                 if 0 <= nr < self.config.height and (
-                        0 <= nc < self.config.width):
+                    0 <= nc < self.config.width
+                ):
                     neighbors.append((nr, nc))
 
         return neighbors
@@ -361,14 +370,16 @@ class HexMazeGenerator:
             if (cell_val & mask) == 0:
                 nr, nc = r + dr, c + dc
                 if 0 <= nr < self.config.height and (
-                        0 <= nc < self.config.width):
+                    0 <= nc < self.config.width
+                ):
                     neighbors.append((nr, nc))
         return neighbors
 
     def _heuristic(self, cell: Tuple[int, int]) -> int:
         """Manhattan distance to exit."""
-        return (abs(cell[0] - self.config.exit[0])
-                + abs(cell[1] - self.config.exit[1]))
+        return abs(cell[0] - self.config.exit[0]) + abs(
+            cell[1] - self.config.exit[1]
+        )
 
     def bfs_opti(self) -> Generator[Any, None, None]:
         self.initialize_visited()
@@ -470,10 +481,13 @@ class HexMazeGenerator:
         exit_ = self.config.exit
         start = self.config.entry
 
-        open_heap: List[Tuple[int, int, Tuple[int, int],
-                              Optional[Tuple[int, int]]]] = []
-        heappush(open_heap, (abs(target_len - self._heuristic(start)),
-                             0, start, None))
+        open_heap: List[
+            Tuple[int, int, Tuple[int, int], Optional[Tuple[int, int]]]
+        ] = []
+        heappush(
+            open_heap,
+            (abs(target_len - self._heuristic(start)), 0, start, None),
+        )
 
         g_best: Dict[Tuple[int, int], int] = {start: 0}
         came_from: Dict[Tuple[int, int], Optional[Tuple[int, int]]] = {}
@@ -527,9 +541,7 @@ class HexMazeGenerator:
         exclude: Set[Tuple[Tuple[int, int], ...]] = set()
 
         first_out: List[List[Tuple[int, int]]] = []
-        for step in self._astar_with_forbidden_steps(
-            maze, first_out
-        ):
+        for step in self._astar_with_forbidden_steps(maze, first_out):
             yield step
 
         if first_out:
@@ -554,8 +566,7 @@ class HexMazeGenerator:
             if length_range > 0:
                 percentiles = [0.25, 0.50, 0.75]
                 targets = [
-                    int(shortest_len + p * length_range)
-                    for p in percentiles
+                    int(shortest_len + p * length_range) for p in percentiles
                 ]
                 for target in targets:
                     path_out: List[List[Tuple[int, int]]] = []
