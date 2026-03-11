@@ -84,7 +84,7 @@ class Application:
 
         for key in REQ_KEYS:
             if key not in os.environ:
-                return False
+                raise ValueError(f"Missing key in config file: {key}")
 
         width = os.environ.get("WIDTH")
         if width in ["None", None]:
