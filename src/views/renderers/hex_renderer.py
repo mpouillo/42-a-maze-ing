@@ -9,6 +9,7 @@ class HexRenderer(BaseRenderer):
 
         self.wall_size = 4
         self.compute_scales()
+        print(self.wall_size)
         self.prev_gen = None
 
         self.add_layer("maze", self.offset_x, self.offset_y,

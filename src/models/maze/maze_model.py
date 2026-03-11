@@ -1,6 +1,6 @@
 import os
 import numpy as np
-from typing import Union, Generator, Tuple, Optional, TypeAlias
+from typing import Union, Generator, Tuple, Optional, TypeAlias, Any
 
 from src.models.maze.maze_config import MazeConfig
 from src.models.maze.generation import MazeGenerator
@@ -9,7 +9,7 @@ from src.models.maze.file_manager import MazeFileManager
 
 StepList: TypeAlias = list[dict[tuple[int, int], int]]
 StepGenerator: TypeAlias = Generator[
-    Tuple[np.ndarray, Tuple[int, int]], None, None
+    Tuple[str, Tuple[int, int], Tuple[int, int]], None, None
 ]
 
 
@@ -37,23 +37,20 @@ class MazeModel:
 
         if self.config.is_hex:
 
-            self.maze: np.ndarray = np.full(
+            self.maze: np.ndarray[Any, Any] = np.full(
                 (self.config.height, self.config.width),
                 0x3F, dtype=np.uint8
             )
         else:
-            self.maze: np.ndarray = np.full(
+            self.maze = np.full(
                 (self.config.height, self.config.width),
                 0xF, dtype=np.uint8
             )
-        self.solved_maze: Optional[np.ndarray] = None
+        self.solved_maze: Optional[np.ndarray[Any, Any]] = None
 
-        self.solved_maze: Optional[np.ndarray] = None
-
-        self.solved_maze: Optional[np.ndarray] = None
-        self.gen_steps = []
-        self.solve_steps = []
-        self.valid_paths = []
+        self.gen_steps: list[Any] = []
+        self.solve_steps: list[Any] = []
+        self.valid_paths: list[Any] = []
 
         self.generator.initialize_maze()
 
@@ -75,7 +72,7 @@ class MazeModel:
                                   key=lambda path: len(path))
         self.save_solution(self.valid_paths[0])
 
-    def get_generation_steps(self):
+    def get_generation_steps(self) -> StepGenerator:
         step_gen = self.generator.generate_steps()
         for maze, info in step_gen:
             self.maze = maze

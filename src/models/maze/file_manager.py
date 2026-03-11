@@ -7,7 +7,7 @@ class MazeFileManager:
     def __init__(self, config: MazeConfig):
         self.config = config
 
-    def write_maze(self, file_path: str, maze: np.ndarray) -> None:
+    def write_maze(self, file_path: str, maze: np.ndarray[Any, Any]) -> None:
         """Writes the maze grid and entry/exit points to the file."""
         with open(file_path, "w") as f:
             if self.config.is_hex:
@@ -31,7 +31,7 @@ class MazeFileManager:
             with open(file_path, "a") as f:
                 f.write(solution_str)
 
-    def resolve_to_string(self, maze: np.ndarray,
+    def resolve_to_string(self, maze: np.ndarray[Any, Any],
                           maze_gen_instance: Any) -> str:
         """
         Returns the solution string.
@@ -72,7 +72,7 @@ class MazeFileManager:
 
     # --- Private Helpers ---
 
-    def _resolve_rect(self, maze: np.ndarray) -> str:
+    def _resolve_rect(self, maze: np.ndarray[Any, Any]) -> str:
         row, col = self.config.entry
         prev: Optional[Tuple[int, int]] = None
         path_chars = []
@@ -113,7 +113,7 @@ class MazeFileManager:
 
         return "".join(path_chars)
 
-    def _resolve_hex(self, maze: np.ndarray, gen: Any) -> str:
+    def _resolve_hex(self, maze: np.ndarray[Any, Any], gen: Any) -> str:
         row, col = self.config.entry
         prev: Optional[Tuple[int, int]] = None
         path_chars = []

@@ -1,13 +1,13 @@
 from heapq import heappush, heappop
 from random import randint, seed
-from typing import Any, List, Tuple, Optional, Deque, Dict, Generator, Set
+from typing import Any, List, Tuple, Optional, Dict, Generator, Set
 from typing import TypeAlias
 import numpy as np
-from collections import deque, defaultdict
+from collections import deque
 from src.models.maze.maze_config import MazeConfig
 
 StepGenerator: TypeAlias = Generator[
-    Tuple[np.ndarray, Tuple[int, int]], None, None
+    Tuple[str, Tuple[int, int], Tuple[int, int]], None, None
 ]
 
 
@@ -96,7 +96,7 @@ class MazeGenerator:
             self.maze[current] &= 0XFF & ~self.RIGHT
             self.maze[next_cell] &= 0XFF & ~self.LEFT
 
-    def generate_steps(self) -> StepGenerator:
+    def generate_steps(self) -> Generator[Any, None, None]:
         self.initialize_maze()
         self.initialize_visited()
         self.set_logo_as_visited()
@@ -147,7 +147,8 @@ class MazeGenerator:
     def close_deadend(
             self, maze: np.ndarray[Any, Any],
             row: int, col: int
-    ):
+    ) -> Generator[Tuple[np.ndarray[Any, Any],
+                         Tuple[int, int]], None, None]:
         """Fill a deadend by adding a wall to the only open side"""
         next_cell = (row, col)
         while (
@@ -185,7 +186,8 @@ class MazeGenerator:
 
     def solve_deadends_steps(
         self
-    ) -> StepGenerator:
+    ) -> Generator[Tuple[np.ndarray[Any, Any],
+                         Tuple[int, int]], None, None]:
         """
         Removes dead ends to find the solution.
         """
@@ -221,7 +223,7 @@ class MazeGenerator:
 
     def add_paths_steps(
         self, solved: np.ndarray[Any, Any], solution_str_len: int
-    ) -> StepGenerator:
+    ) -> Generator[Any, None, None]:
         row, col = self.config.entry
 
         solve_size = max(0, solution_str_len)
@@ -302,7 +304,7 @@ class MazeGenerator:
 
         return candidates[randint(0, len(candidates) - 1)]
 
-    def get_neighbors_open(self, cell: Tuple[int, int]):
+    def get_neighbors_open(self, cell: Tuple[int, int]) -> list[Any]:
         r, c = cell
         neighbors: List[Tuple[int, int]] = []
 
@@ -317,7 +319,7 @@ class MazeGenerator:
 
         return neighbors
 
-    def bfs(self, max_paths=999):
+    def bfs(self, max_paths: int = 999) -> StepGenerator:
         self.initialize_visited()
         self.set_logo_as_visited()
         self.bfs_paths = []
@@ -341,7 +343,8 @@ class MazeGenerator:
                 if nxt not in path:
                     q.append((nxt, path + [nxt]))
 
-    def get_neighbors_open_opti(self, cell: Tuple[int, int], maze):
+    def get_neighbors_open_opti(self, cell: Tuple[int, int],
+                                maze: np.ndarray[Any, Any]) -> list[Any]:
         r, c = cell
         neighbors: List[Tuple[int, int]] = []
 
@@ -360,32 +363,25 @@ class MazeGenerator:
         return (abs(cell[0] - self.config.exit[0])
                 + abs(cell[1] - self.config.exit[1]))
 
-    def bfs_opti(self, max_paths=10):
+    def bfs_opti(self) -> StepGenerator:
         self.initialize_visited()
         self.set_logo_as_visited()
         self.bfs_paths = []
         maze = self.solve_deadends()
 
-        for step in self.multi_path_search(maze, max_paths=max_paths):
+        for step in self.multi_path_search(maze):
             yield step
-
-    def _yield_path(
-        self,
-        path: List[Tuple[int, int]],
-    ) -> Generator[Any, None, None]:
-        for i in range(1, len(path)):
-            yield ("fill", path[i - 1], path[i])
-        yield ("path_found", path[-1], path[-1])
 
     def _astar_with_forbidden_steps(
         self,
-        maze: np.ndarray,
-        start: Tuple[int, int],
+        maze: np.ndarray[Any, Any],
         out_path: List[List[Tuple[int, int]]],
     ) -> Generator[Any, None, None]:
         exit_ = self.config.exit
+        start = self.config.entry
 
-        open_heap: List[Tuple[int, int, Tuple[int, int], Optional[Tuple[int, int]]]] = []
+        open_heap: List[Tuple[int, int, Tuple[int, int],
+                              Optional[Tuple[int, int]]]] = []
         heappush(open_heap, (self._heuristic(start), 0, start, None))
 
         g_best: Dict[Tuple[int, int], int] = {start: 0}
@@ -398,9 +394,6 @@ class MazeGenerator:
                 continue
             came_from[curr] = parent
 
-            if parent is not None:
-                yield ("fill", parent, curr)
-
             if curr == exit_:
                 path: List[Tuple[int, int]] = []
                 node: Optional[Tuple[int, int]] = exit_
@@ -409,8 +402,6 @@ class MazeGenerator:
                     node = came_from[node]
                 path.reverse()
                 out_path.append(path)
-                for step in self._yield_path(path):
-                    yield step
                 return
 
             for nxt in self.get_neighbors_open_opti(curr, maze):
@@ -425,13 +416,13 @@ class MazeGenerator:
 
     def _astar_longest_steps(
         self,
-        maze: np.ndarray,
+        maze: np.ndarray[Any, Any],
         out_path: List[List[Tuple[int, int]]],
     ) -> Generator[Any, None, None]:
         exit_ = self.config.exit
         start = self.config.entry
 
-        open_heap: List[Tuple[int, Tuple[int, int], Optional[Tuple[int, int]]]] = []
+        open_heap: List[Any] = []
         heappush(open_heap, (0, start, None))
 
         g_best: Dict[Tuple[int, int], int] = {start: 0}
@@ -444,9 +435,6 @@ class MazeGenerator:
                 continue
             came_from[curr] = parent
 
-            if parent is not None:
-                yield ("fill", parent, curr)
-
             if curr == exit_:
                 path: List[Tuple[int, int]] = []
                 node: Optional[Tuple[int, int]] = exit_
@@ -455,8 +443,6 @@ class MazeGenerator:
                     node = came_from[node]
                 path.reverse()
                 out_path.append(path)
-                for step in self._yield_path(path):
-                    yield step
                 return
 
             for nxt in self.get_neighbors_open_opti(curr, maze):
@@ -470,7 +456,7 @@ class MazeGenerator:
 
     def _astar_target_length_steps(
         self,
-        maze: np.ndarray,
+        maze: np.ndarray[Any, Any],
         target_len: int,
         exclude: Set[Tuple[Tuple[int, int], ...]],
         out_path: List[List[Tuple[int, int]]],
@@ -478,8 +464,10 @@ class MazeGenerator:
         exit_ = self.config.exit
         start = self.config.entry
 
-        open_heap: List[Tuple[int, int, Tuple[int, int], Optional[Tuple[int, int]]]] = []
-        heappush(open_heap, (abs(target_len - self._heuristic(start)), 0, start, None))
+        open_heap: List[Tuple[int, int, Tuple[int, int],
+                              Optional[Tuple[int, int]]]] = []
+        heappush(open_heap, (abs(target_len - self._heuristic(start)),
+                             0, start, None))
 
         g_best: Dict[Tuple[int, int], int] = {start: 0}
         came_from: Dict[Tuple[int, int], Optional[Tuple[int, int]]] = {}
@@ -493,9 +481,6 @@ class MazeGenerator:
             if curr in came_from:
                 continue
             came_from[curr] = parent
-
-            if parent is not None:
-                yield ("fill", parent, curr)
 
             if curr == exit_:
                 path: List[Tuple[int, int]] = []
@@ -527,63 +512,17 @@ class MazeGenerator:
 
         if best_path is not None:
             out_path.append(best_path)
-            for step in self._yield_path(best_path):
-                yield step
-
-    def _yen_fallback(
-        self,
-        maze: np.ndarray,
-        needed: int,
-    ) -> Generator[Any, None, None]:
-        if not self.bfs_paths:
-            return
-
-        candidates: List[Tuple[int, List[Tuple[int, int]]]] = []
-        candidate_set: Set[Tuple[Tuple[int, int], ...]] = {
-            tuple(p) for p in self.bfs_paths
-        }
-
-        while len(self.bfs_paths) < needed:
-            for k_path in list(self.bfs_paths):
-                for spur_idx in range(len(k_path) - 1):
-                    spur_node = k_path[spur_idx]
-                    root_path = k_path[:spur_idx + 1]
-
-                    spur_out: List[List[Tuple[int, int]]] = []
-                    for step in self._astar_with_forbidden_steps(
-                        maze, spur_node, spur_out
-                    ):
-                        yield step
-
-                    if not spur_out:
-                        continue
-
-                    total_path = root_path + spur_out[0][1:]
-                    total_key = tuple(total_path)
-
-                    if total_key not in candidate_set:
-                        candidate_set.add(total_key)
-                        heappush(candidates, (len(total_path), total_path))
-
-            if not candidates:
-                break
-
-            _, best = heappop(candidates)
-            self.bfs_paths.append(best)
-            for step in self._yield_path(best):
-                yield step
 
     def multi_path_search(
         self,
-        maze: np.ndarray,
-        max_paths: int = 5,
+        maze: np.ndarray[Any, Any],
     ) -> Generator[Any, None, None]:
         self.bfs_paths = []
         exclude: Set[Tuple[Tuple[int, int], ...]] = set()
 
         first_out: List[List[Tuple[int, int]]] = []
         for step in self._astar_with_forbidden_steps(
-            maze, self.config.entry, first_out
+            maze, first_out
         ):
             yield step
 
@@ -602,9 +541,9 @@ class MazeGenerator:
             exclude.add(tuple(longest))
 
         if longest is not None:
-            shortest_len  = len(first)
-            longest_len   = len(longest)
-            length_range  = longest_len - shortest_len
+            shortest_len = len(first)
+            longest_len = len(longest)
+            length_range = longest_len - shortest_len
 
             if length_range > 0:
                 percentiles = [0.25, 0.50, 0.75]
@@ -625,10 +564,3 @@ class MazeGenerator:
                         exclude.add(tuple(path))
 
             self.bfs_paths.append(longest)
-
-        if len(self.bfs_paths) < 2:
-            for step in self._yen_fallback(maze, needed=2):
-                yield step
-
-        for path in self.bfs_paths:
-            yield ("path_found", path[-1], path[-1])
