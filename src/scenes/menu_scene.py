@@ -72,25 +72,43 @@ class MenuScene(BaseScene):
             self.app.window_height // 10 * 4, text, 0xFFFFFFFF, 10
         )
 
+    def draw_error_popup(self, message):
+        canvas = self.view.layers.get("popup")
+        base_text_w = (len(message) * self.view.font_width + 1)
+        max_scale = self.app.window_width // base_text_w
+        theme_scale = self.view.ui_style.get("font_scale", 1)
+        font_scale = max(1, min(max_scale, theme_scale))
+        text_w = (len(message) * (self.view.font_width + 1) - 1) * font_scale
+
+        self.view.draw_text(
+            canvas, (self.app.window_width - text_w) // 2,
+            self.app.window_height // 10,
+            message, 0xFFFFFFFF, font_scale
+        )
+
     def _cmd_start_display(self):
+        try:
+            self.app.validate_config()
+        except Exception as e:
+            self.draw_error_popup(str(e))
+            return
+
         from src.scenes import DisplayScene
         self.view.clear_layers()
         self.view.clear_buttons()
-        try:
-            self.app.current_scene = DisplayScene(self.app)
-        except Exception as e:
-            print(e)
-            self.app.current_scene = MenuScene(self.app)
+        self.app.current_scene = DisplayScene(self.app)
 
     def _cmd_start_game(self):
+        try:
+            self.app.validate_config()
+        except Exception as e:
+            self.draw_error_popup(str(e))
+            return
+
         from src.scenes import GameScene
         self.view.clear_layers()
         self.view.clear_buttons()
-        try:
-            self.app.current_scene = GameScene(self.app)
-        except Exception as e:
-            print(e)
-            self.app.current_scene = MenuScene(self.app)
+        self.app.current_scene = GameScene(self.app)
 
     def _cmd_open_settings(self):
         from src.scenes import SettingsScene

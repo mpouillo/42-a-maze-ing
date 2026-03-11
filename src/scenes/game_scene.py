@@ -116,6 +116,8 @@ class GameScene(BaseScene):
                 if cur in path:
                     self.view.draw_path(path)
                     break
+        else:
+            self.view.clear_layers("path")
 
         super().render()
 
