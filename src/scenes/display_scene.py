@@ -115,10 +115,6 @@ class DisplayScene(BaseScene):
         self.view.draw_path(self.model.valid_paths[self.current_path])
         self.view.draw_endpoints()
 
-        self.current_path += 1
-        if self.current_path > len(self.model.valid_paths) - 1:
-            self.current_path = 0
-
         canvas = self.view.layers.get("popup")
         canvas.clear()
         self.view.draw_text(
@@ -129,6 +125,10 @@ class DisplayScene(BaseScene):
              f"({len(self.model.valid_paths[self.current_path])})"),
             0xFFFFFFFF, 3
         )
+
+        self.current_path += 1
+        if self.current_path > len(self.model.valid_paths) - 1:
+            self.current_path = 0
 
     def update(self) -> None:
         if self.generating is True:
