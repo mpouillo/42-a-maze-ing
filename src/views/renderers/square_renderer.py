@@ -85,7 +85,6 @@ class SquareRenderer(BaseRenderer):
 
         match cmd:
             case 'remove':
-
                 maze_canvas = self.layers.get("maze")
                 if self.prev_gen:
                     self.draw_cell_center(maze_canvas, *self.prev_gen)
@@ -99,6 +98,8 @@ class SquareRenderer(BaseRenderer):
                 self.draw_cell_center(path_canvas, x2, y2, step_color)
                 self.draw_cell_walls(path_canvas, x1, y1, wall,
                                      False, step_color & 0x7FFFFFFF)
+            case 'path_found':
+                pass
             case _:
                 pass
 

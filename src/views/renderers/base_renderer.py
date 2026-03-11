@@ -31,7 +31,7 @@ class BaseRenderer:
 
         self.colors = {
             "cell": 0xffffbe0b,
-            "character": 0xff3a86ff,
+            "character": 0xffffbe0b,
             "entry": 0xFF00FF00,
             "exit": 0xFFFF0000,
             "path_1": 0xff3a86ff,

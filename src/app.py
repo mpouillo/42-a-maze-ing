@@ -71,6 +71,85 @@ class Application:
         sys.stdout.flush()
         os._exit(0)
 
+    @staticmethod
+    def validate_config():
+        REQ_KEYS = [
+            "WIDTH",
+            "HEIGHT",
+            "ENTRY",
+            "EXIT",
+            "OUTPUT_FILE",
+            "PERFECT"
+        ]
+
+        for key in REQ_KEYS:
+            if key not in os.environ:
+                return False
+
+        width = os.environ.get("WIDTH")
+        if width in ["None", None]:
+            raise ValueError("Width cannot be None")
+        if not width.isdigit():
+            raise ValueError("Width must be a valid positive integer")
+        if int(width) < 1:
+            raise ValueError(f"Width below minimum of 1 ({width})")
+
+        height = os.environ.get("HEIGHT")
+        if height in ["None", None]:
+            raise ValueError("Height cannot be None")
+        if not height.isdigit():
+            raise ValueError("Height must be a valid positive integer")
+        if int(height) < 1:
+            raise ValueError(f"Height below minimum of 1 ({height})")
+
+        entry_val = os.environ.get("ENTRY")
+        if not entry_val:
+            raise ValueError("Entry cannot be None")
+        if "," not in entry_val:
+            raise ValueError("Entry coordinates must be separated by a ','")
+        x, y = entry_val.split(",", 1)
+        if not x.isdigit() or not y.isdigit():
+            raise ValueError("Entry must be 2 valid positive integers")
+        if not 0 <= int(x) < int(width) or not 0 <= int(y) < int(height):
+            raise ValueError("Entry coordinates must fit within the maze")
+
+        exit_val = os.environ.get("EXIT")
+        if not exit_val:
+            raise ValueError("Exit cannot be None")
+        if "," not in exit_val:
+            raise ValueError("Exit coordinates must be separated by a ','")
+        x, y = exit_val.split(",", 1)
+        if not x.isdigit() or not y.isdigit():
+            raise ValueError("Exit must be 2 valid positive integers")
+        if not 0 <= int(x) < int(width) or not 0 <= int(y) < int(height):
+            raise ValueError("Exit coordinates must fit within the maze")
+
+        output_file = os.environ.get("OUTPUT_FILE")
+        if not output_file:
+            raise ValueError("Output file cannot be None")
+        if os.path.splitext(output_file)[1] != ".txt":
+            raise ValueError("Output file extension must be .txt")
+
+        perfect = os.environ.get("PERFECT")
+        if not perfect:
+            raise ValueError("Perfect state cannot be None")
+        if perfect.lower() not in ["true", "false", "0", "1"]:
+            raise ValueError("Perfect state should be either True or False")
+
+        hex_s = os.environ.get("HEX")
+        if hex_s and hex_s.lower() not in ["true", "false", "0", "1"]:
+            raise ValueError("Hex state should be either True or False")
+
+        seed = os.environ.get("SEED")
+        if seed and seed.isdigit():
+            if int(seed) < 0:
+                raise ValueError(f"Seed below minimum of 0 ({seed})")
+        elif seed:
+            if seed.lower() != "random":
+                raise ValueError(
+                    "Seed should be None, 'Random', or a valid integer"
+                )
+
     def update_window(self, param):
         self.key_actions()
 

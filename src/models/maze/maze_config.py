@@ -73,7 +73,6 @@ class MazeConfig:
                 seed_val = int(seed_env)
             except ValueError:
                 seed_val = None
-            print(seed_val)
 
         # 6. Boolean Flags
         perfect_str = str(os.environ.get("PERFECT", "True"))
