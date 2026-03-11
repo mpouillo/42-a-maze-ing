@@ -7,7 +7,8 @@ class GameScene(BaseScene):
     def __init__(self, app) -> None:
         super().__init__(app)
 
-        self.model = MazeModel(self.app.config_file)
+        self.model = MazeModel()
+
         if self.model.config.is_hex is True:
             self.view = HexRenderer(self.app, self.model)
         else:
@@ -15,12 +16,11 @@ class GameScene(BaseScene):
 
         self.pos_x = 0
         self.pos_y = 0
-        self.prev_x = 0
-        self.prev_y = 0
         self.help = False
 
         self.setup_ui()
-        self.view.add_layer("char", 10)
+        self.view.add_layer("char", self.view.offset_x, self.view.offset_y,
+                            4, self.view.maze_w, self.view.maze_h)
         self.model.generate_new_maze()
         self.view.draw_maze()
         self.view.draw_endpoints()
@@ -76,10 +76,11 @@ class GameScene(BaseScene):
     def end_game(self):
         import time
         canvas = self.view.layers.get("popup")
+        canvas.clear()
         font_scale = max(1, min(
             self.app.window_height, self.app.window_width) // 100
         )
-        text = "You won!"
+        text = "You win!"
         text_w = (len(text) * (self.view.font_width + 1) - 1) * font_scale
         text_h = self.view.font_height * font_scale
         text_x = (self.app.window_width - text_w) // 2
@@ -103,22 +104,12 @@ class GameScene(BaseScene):
         time.sleep(2)
 
         canvas.clear()
-        while True:
-            try:
-                self.model.config.height += 1
-                self.model.config.width += 1
-                self.model.generate_new_maze()
-                break
-            except ValueError:
-                pass
-        self.view.compute_scales()
+        self.model.generate_new_maze()
         self.view.draw_maze()
         self.reset_game()
 
     def render(self):
         self.draw_character()
-        self.view.layers.get("main").clear()
-        self.view.draw_endpoints()
         if self.help is True:
             cur = (self.pos_y, self.pos_x)
             for path in self.model.valid_paths:
@@ -129,27 +120,47 @@ class GameScene(BaseScene):
         super().render()
 
     def update(self) -> None:
-        # Move character
+        KEY_LEFT = 65361
+        KEY_UP = 65362
+        KEY_RIGHT = 65363
+        KEY_DOWN = 65364
+
+        is_even = (self.pos_y % 2 == 0)
+        keys = self.app.keypresses
         cur_cell = self.model.maze[self.pos_y][self.pos_x]
-        if 65361 in self.app.keypresses and not cur_cell & 8:   # Left
-            self.prev_x = self.pos_x
-            self.prev_y = self.pos_y
-            self.pos_x -= 1
-        cur_cell = self.model.maze[self.pos_y][self.pos_x]
-        if 65362 in self.app.keypresses and not cur_cell & 1:   # Up
-            self.prev_x = self.pos_x
-            self.prev_y = self.pos_y
-            self.pos_y -= 1
-        cur_cell = self.model.maze[self.pos_y][self.pos_x]
-        if 65364 in self.app.keypresses and not cur_cell & 4:   # Down
-            self.prev_x = self.pos_x
-            self.prev_y = self.pos_y
-            self.pos_y += 1
-        cur_cell = self.model.maze[self.pos_y][self.pos_x]
-        if 65363 in self.app.keypresses and not cur_cell & 2:   # Right
-            self.prev_x = self.pos_x
-            self.prev_y = self.pos_y
-            self.pos_x += 1
+
+        if not self.model.config.is_hex:
+            if KEY_LEFT in keys and not cur_cell & 8:
+                self.pos_x -= 1
+            elif KEY_UP in keys and not cur_cell & 1:
+                self.pos_y -= 1
+            elif KEY_DOWN in keys and not cur_cell & 4:
+                self.pos_y += 1
+            elif KEY_RIGHT in keys and not cur_cell & 2:
+                self.pos_x += 1
+        else:
+            if KEY_LEFT in keys:
+                if KEY_UP in keys and not cur_cell & 32:
+                    self.pos_y -= 1
+                    if is_even:
+                        self.pos_x -= 1
+                elif KEY_DOWN in keys and not cur_cell & 8:
+                    self.pos_y += 1
+                    if is_even:
+                        self.pos_x -= 1
+                elif not cur_cell & 16:
+                    self.pos_x -= 1
+            elif KEY_RIGHT in keys:
+                if KEY_UP in keys and not cur_cell & 1:
+                    self.pos_y -= 1
+                    if not is_even:
+                        self.pos_x += 1
+                elif KEY_DOWN in keys and not cur_cell & 4:
+                    self.pos_y += 1
+                    if not is_even:
+                        self.pos_x += 1
+                elif not cur_cell & 2:
+                    self.pos_x += 1
 
         # Exit reached
         if (self.pos_y, self.pos_x) == self.model.config.exit:

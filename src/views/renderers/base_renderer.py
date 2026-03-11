@@ -21,7 +21,7 @@ class BaseRenderer:
             "btn_bg": 0xFF333333,
             "btn_text": 0xFFFFFFFF,
             "btn_border": 0xFF555555,
-            "btn_hover": 0xffffbe0b,
+            "btn_hover": 0xff8338ec,
             "btn_disabled": 0xFF404040,
             "btn_text": 0xFFFFFFFF,
             "btn_text_disabled": 0xFF7F7F7F,
@@ -42,9 +42,9 @@ class BaseRenderer:
 
         self.add_layer("bg", 0, 0, 0, self.app.window_width,
                        self.app.window_height)
-        self.add_layer("ui", 0, 0, 0, self.app.window_width,
+        self.add_layer("ui", 0, 0, 10, self.app.window_width,
                        self.app.window_height)
-        self.add_layer("popup", 0, 0, 0, self.app.window_width,
+        self.add_layer("popup", 0, 0, 99, self.app.window_width,
                        self.app.window_height)
 
         self.fonts_dir = "src/fonts"
@@ -210,7 +210,9 @@ class BaseRenderer:
 
     def refresh_layers(self):
         self.app.mlx.mlx_clear_window(self.app.mlx_ptr, self.app.win_ptr)
-        for layer in sorted(self.layers.values(), key=lambda layer: layer.z):
+        for layer in sorted(
+            self.layers.values(), key=lambda layer: layer.z,
+        ):
             self.app.mlx.mlx_put_image_to_window(
                 self.app.mlx_ptr, self.app.win_ptr, layer.ptr, layer.x, layer.y
             )

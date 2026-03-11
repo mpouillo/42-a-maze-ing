@@ -1,4 +1,5 @@
 import os
+import sys
 import time
 from mlx import Mlx  # type: ignore
 from src.scenes import MenuScene
@@ -67,6 +68,7 @@ class Application:
         self.mlx.mlx_do_sync(self.mlx_ptr)
         self.mlx.mlx_release(self.mlx_ptr)
         print("Exiting...")
+        sys.stdout.flush()
         os._exit(0)
 
     def update_window(self, param):

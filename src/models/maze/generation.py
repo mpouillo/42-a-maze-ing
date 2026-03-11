@@ -1,4 +1,3 @@
-from collections import deque
 from heapq import heappush, heappop
 from random import randint, seed
 from typing import Any, List, Tuple, Optional, Deque, Dict, Generator, Set
@@ -30,10 +29,9 @@ class MazeGenerator:
         self.config.exit = config.exit
         self.config.perfect = config.perfect
 
-        if config.seed is not None:
-            seed(config.seed)
-
     def initialize_maze(self) -> None:
+        if self.config.seed is not None:
+            seed(self.config.seed)
         self.maze = np.full((self.config.height, self.config.width),
                             0xF, dtype=np.uint8)
 

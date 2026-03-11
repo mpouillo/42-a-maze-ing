@@ -23,9 +23,6 @@ class HexMazeGenerator:
         self.config.exit = config.exit
         self.config.perfect = config.perfect
 
-        if config.seed is not None:
-            seed(config.seed)
-
         # format: (dr, dc): (current_mask, neighbor_mask)
         self._even_neighbors = {
             (-1, 0): (self.TOP_RIGHT, self.BOTTOM_LEFT),
@@ -46,10 +43,16 @@ class HexMazeGenerator:
         }
 
     def initialize_maze(self) -> None:
-        self.maze = np.full((self.config.height, self.config.width), 0x3F, dtype=np.uint8)
+        if self.config.seed is not None:
+            seed(self.config.seed)
+        self.maze = np.full(
+            (self.config.height, self.config.width), 0x3F, dtype=np.uint8
+        )
 
     def initialize_visited(self) -> None:
-        self.visited = np.zeros((self.config.height, self.config.width), dtype=bool)
+        self.visited = np.zeros(
+            (self.config.height, self.config.width), dtype=bool
+        )
 
     def set_logo_as_visited(self) -> None:
         """Mark logo area as visited so the maze generates around it"""

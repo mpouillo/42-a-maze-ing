@@ -2,6 +2,7 @@
 
 import sys
 from src import Application
+from dotenv import load_dotenv
 
 
 def get_config_file() -> str:
@@ -13,6 +14,7 @@ def get_config_file() -> str:
 
 def main() -> None:
     config_file = get_config_file()
+    load_dotenv(config_file)
     app = Application(config_file)
     app.run()
 

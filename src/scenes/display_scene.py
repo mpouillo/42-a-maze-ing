@@ -12,7 +12,7 @@ class DisplayScene(BaseScene):
         self.gen_step = 0
         self.current_path = 0
 
-        self.model = MazeModel(self.app.config_file)
+        self.model = MazeModel()
 
         if self.model.config.is_hex is True:
             self.view = HexRenderer(self.app, self.model)
@@ -92,7 +92,7 @@ class DisplayScene(BaseScene):
                 self.view.draw_step(self.model.solve_steps[self.solve_step])
                 self.solve_step += 1
         else:
-            self.view.clear_layers("path")
+            self.view.clear_layers("path", "popup")
             self.view.buttons.get("solve").label = "Skip"
             self.solve_step = 0
             self.solving = True
@@ -102,7 +102,7 @@ class DisplayScene(BaseScene):
             self.solving = False
 
         if 65507 in self.app.keypresses:
-            self.view.layers.get("path").clear()
+            self.view.clear_layers("path")
             return
 
         if not self.model.valid_paths:

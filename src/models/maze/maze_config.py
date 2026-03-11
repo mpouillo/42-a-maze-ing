@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-from dotenv import load_dotenv
 import os
 from typing import Optional, Tuple
 
@@ -15,12 +14,11 @@ class MazeConfig:
     is_hex: bool
 
     @staticmethod
-    def from_env(config_file: str) -> 'MazeConfig':
+    def from_env() -> 'MazeConfig':
         """
         Factory method to create a MazeConfig instance from a .env file.
         Performs all validation logic before creating the object.
         """
-        load_dotenv(config_file)
 
         # 1. Dimensions
         try:
@@ -75,6 +73,7 @@ class MazeConfig:
                 seed_val = int(seed_env)
             except ValueError:
                 seed_val = None
+            print(seed_val)
 
         # 6. Boolean Flags
         perfect_str = str(os.environ.get("PERFECT", "True"))

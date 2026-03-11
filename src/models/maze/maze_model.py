@@ -1,4 +1,3 @@
-import sys
 import os
 import numpy as np
 from typing import Union, Generator, Tuple, Optional, TypeAlias
@@ -19,13 +18,11 @@ class MazeModel:
     Main controller for Maze Generation.
     Acts as a bridge between the Algorithm and the Display/File System.
     """
-    def __init__(self, config_file: str) -> None:
+    def __init__(self) -> None:
         try:
-            self.config = MazeConfig.from_env(config_file)
+            self.config = MazeConfig.from_env()
         except Exception as e:
-            print(f"Configuration error: {e}")
-            sys.stdout.flush()
-            os._exit(1)
+            raise ValueError(f"Configuration error: {e}")
 
         # Components
         self.file_manager = MazeFileManager(self.config)
