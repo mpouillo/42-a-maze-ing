@@ -67,11 +67,10 @@ class SettingsScene(BaseScene):
                 self.pick_width = 0
             else:
                 if 65507 in self.app.keypresses:
-                    self.pick_width -= 1
+                    os.environ["WIDTH"] = self.config.get("WIDTH")
+                    return
                 else:
                     self.pick_width += 1
-                if self.pick_width < 0:
-                    self.pick_width = len(picks) - 1
                 if self.pick_width >= len(picks):
                     self.pick_width = 0
             os.environ["WIDTH"] = str(picks[self.pick_width])
@@ -85,11 +84,10 @@ class SettingsScene(BaseScene):
                 self.pick_height = 0
             else:
                 if 65507 in self.app.keypresses:
-                    self.pick_height -= 1
+                    os.environ["HEIGHT"] = self.config.get("HEIGHT")
+                    return
                 else:
                     self.pick_height += 1
-                if self.pick_height < 0:
-                    self.pick_height = len(picks) - 1
                 if self.pick_height >= len(picks):
                     self.pick_height = 0
             os.environ["HEIGHT"] = str(picks[self.pick_height])
@@ -98,26 +96,47 @@ class SettingsScene(BaseScene):
 
     def _cmd_update_entry(self):
         try:
-            coords = (",".join(
-                [str(random.randrange(0, int(os.environ.get("HEIGHT", 0)))),
-                 str(random.randrange(0, int(os.environ.get("WIDTH", 0))))]
-            ))
-            os.environ["ENTRY"] = coords
+            if 65507 in self.app.keypresses:
+                os.environ["ENTRY"] = self.config.get("ENTRY")
+                return
         except Exception:
             pass
+        while True:
+            try:
+                coords = (",".join([
+                    str(random.randrange(0, int(os.environ.get("HEIGHT", 0)))),
+                    str(random.randrange(0, int(os.environ.get("WIDTH", 0))))
+                ]))
+                os.environ["ENTRY"] = coords
+                self.app.validate_config()
+                break
+            except ValueError:
+                continue
 
     def _cmd_update_exit(self):
         try:
-            coords = (",".join(
-                [str(random.randrange(0, int(os.environ.get("HEIGHT", 0)))),
-                 str(random.randrange(0, int(os.environ.get("WIDTH", 0))))]
-            ))
-            os.environ["EXIT"] = coords
+            if 65507 in self.app.keypresses:
+                os.environ["EXIT"] = self.config.get("EXIT")
+                return
         except Exception:
             pass
+        while True:
+            try:
+                coords = (",".join([
+                    str(random.randrange(0, int(os.environ.get("HEIGHT", 0)))),
+                    str(random.randrange(0, int(os.environ.get("WIDTH", 0))))
+                ]))
+                os.environ["EXIT"] = coords
+                self.app.validate_config()
+                break
+            except ValueError:
+                continue
 
     def _cmd_update_perfect(self):
         try:
+            if 65507 in self.app.keypresses:
+                os.environ["PERFECT"] = self.config.get("PERFECT", "True")
+                return
             if os.environ.get("PERFECT") in [True, "True", "true", 1, "1"]:
                 os.environ["PERFECT"] = "False"
             else:
@@ -127,6 +146,9 @@ class SettingsScene(BaseScene):
 
     def _cmd_update_hex(self):
         try:
+            if 65507 in self.app.keypresses:
+                os.environ["HEX"] = self.config.get("HEX", "False")
+                return
             if os.environ.get("HEX") in [True, "True", "true", 1, "1"]:
                 os.environ["HEX"] = "False"
             else:
@@ -138,8 +160,8 @@ class SettingsScene(BaseScene):
         try:
             if 65507 in self.app.keypresses:
                 os.environ["SEED"] = self.config.get("SEED", None)
-            else:
-                os.environ["SEED"] = "Random"
+                return
+            os.environ["SEED"] = "Random"
         except Exception:
             pass
 

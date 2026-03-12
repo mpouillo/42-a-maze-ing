@@ -58,11 +58,11 @@ class HexMazeGenerator:
         """Mark logo area as visited so the maze generates around it"""
         try:
             with open("src/models/maze/logo.txt", "r") as f:
-                logo = f.read()
+                logo_rows = [line for line in f.read().splitlines()
+                             if line.strip()]
         except FileNotFoundError:
             return
 
-        logo_rows = list(logo.strip().split('\n'))
         if not logo_rows:
             return
 

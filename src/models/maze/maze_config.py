@@ -30,9 +30,6 @@ class MazeConfig:
         if height <= 0 or width <= 0:
             raise ValueError("HEIGHT and WIDTH must be positive")
 
-        if height < 7 or width < 9:
-            raise ValueError("Maze must be at least 7x9")
-
         # 2. Entry Point
         try:
             entry_part = str(os.environ.get("ENTRY", "0,0")).strip().split(',')

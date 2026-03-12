@@ -86,43 +86,86 @@ class Application:
             if key not in os.environ:
                 raise ValueError(f"Missing key in config file: {key}")
 
+        # Getting logo data to check endpoints position
+        logo_data = None
+        try:
+            with open("src/models/maze/logo.txt", "r") as f:
+                logo_data = [line for line in f.read().splitlines()
+                             if line.strip()]
+        except Exception:
+            raise ValueError("Error reading logo data."
+                             "Do you have permissions?")
+        if logo_data:
+            logo_h = len(logo_data)
+            logo_w = len(logo_data[0])
+        else:
+            raise ValueError("No logo data found")
+
         width = os.environ.get("WIDTH")
         if width in ["None", None]:
             raise ValueError("Width cannot be None")
         if not width.isdigit():
             raise ValueError("Width must be a valid positive integer")
-        if int(width) < 1:
+        width = int(width)
+        if width < 1:
             raise ValueError(f"Width below minimum of 1 ({width})")
+        if width < logo_w:
+            raise ValueError("Width cannot be smaller than "
+                             f"logo width ({logo_w})")
 
         height = os.environ.get("HEIGHT")
         if height in ["None", None]:
             raise ValueError("Height cannot be None")
         if not height.isdigit():
             raise ValueError("Height must be a valid positive integer")
-        if int(height) < 1:
+        height = int(height)
+        if height < 1:
             raise ValueError(f"Height below minimum of 1 ({height})")
+        if height < logo_h:
+            raise ValueError("Height cannot be smaller than "
+                             f"logo's ({logo_h})")
+
+        off_x = (width - logo_w) // 2
+        off_y = (height - logo_h) // 2
 
         entry_val = os.environ.get("ENTRY")
         if not entry_val:
             raise ValueError("Entry cannot be None")
         if "," not in entry_val:
             raise ValueError("Entry coordinates must be separated by a ','")
-        x, y = entry_val.split(",", 1)
-        if not x.isdigit() or not y.isdigit():
+        entry_y, entry_x = entry_val.split(",", 1)
+        if not entry_x.isdigit() or not entry_y.isdigit():
             raise ValueError("Entry must be 2 valid positive integers")
-        if not 0 <= int(x) < int(width) or not 0 <= int(y) < int(height):
+        entry_y, entry_x = int(entry_y), int(entry_x)
+        if not 0 <= entry_x < width or not 0 <= entry_y < height:
             raise ValueError("Entry coordinates must fit within the maze")
+        if (
+            off_x <= entry_x < off_x + logo_w
+            and off_y <= entry_y < off_y + logo_h
+        ):
+            if logo_data[entry_y - off_y][entry_x - off_x] == '1':
+                raise ValueError("Entry cannot overlap with logo")
 
         exit_val = os.environ.get("EXIT")
         if not exit_val:
             raise ValueError("Exit cannot be None")
         if "," not in exit_val:
             raise ValueError("Exit coordinates must be separated by a ','")
-        x, y = exit_val.split(",", 1)
-        if not x.isdigit() or not y.isdigit():
+        exit_y, exit_x = exit_val.split(",", 1)
+        if not exit_x.isdigit() or not exit_y.isdigit():
             raise ValueError("Exit must be 2 valid positive integers")
-        if not 0 <= int(x) < int(width) or not 0 <= int(y) < int(height):
+        exit_y, exit_x = int(exit_y), int(exit_x)
+        if not 0 <= exit_x < width or not 0 <= exit_y < height:
             raise ValueError("Exit coordinates must fit within the maze")
+        if (
+            off_x <= exit_x < off_x + logo_w
+            and off_y <= exit_y < off_y + logo_h
+        ):
+            if logo_data[exit_y - off_y][exit_x - off_x] == '1':
+                raise ValueError("Exit cannot overlap with logo")
+
+        if (entry_y, entry_x) == (exit_y, exit_x):
+            raise ValueError("Entry and Exit cannot overlap")
 
         output_file = os.environ.get("OUTPUT_FILE")
         if not output_file:
