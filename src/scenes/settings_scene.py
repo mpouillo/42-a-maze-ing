@@ -1,37 +1,46 @@
-from src.scenes import BaseScene
-from src.views.renderers import BaseRenderer
 import os
 import random
 from dotenv import dotenv_values
+from src.scenes import BaseScene
+from src.views.renderers import BaseRenderer
+from typing import Any, Callable, TypeAlias
+
+BtnData: TypeAlias = list[tuple[str, str, Callable[[], None]]]
 
 
 class SettingsScene(BaseScene):
-    def __init__(self, app):
+    def __init__(self, app: Any) -> None:
         super().__init__(app)
-        self.config = dotenv_values(self.app.config_file)
-        self.bg_step = 0
-        self.view = BaseRenderer(self.app, self.model)
+
+        self.config: dict[str, str | None] = dotenv_values(
+            self.app.config_file
+        )
+        self.bg_step: int = 0
+        self.view: Any = BaseRenderer(self.app, self.model)
+
         self.draw_bg()
         self.setup_ui()
 
-    def setup_ui(self):
+    def setup_ui(self) -> None:
+        """Create buttons with default values"""
         self.view.clear_buttons()
 
-        btn_data = [
-            ["width", "Width", self._cmd_update_width],
-            ["height", "Height", self._cmd_update_height],
-            ["entry", "Entry", self._cmd_update_entry],
-            ["exit", "Exit", self._cmd_update_exit],
-            ["perfect", "Perfect", self._cmd_update_perfect],
-            ["hex", "Hex", self._cmd_update_hex],
-            ["seed", "Seed", self._cmd_update_seed],
-            ["walls", "Walls", self._cmd_update_wall_color]
+        btn_data: BtnData = [
+            ("width", "Width", self._cmd_update_width),
+            ("height", "Height", self._cmd_update_height),
+            ("entry", "Entry", self._cmd_update_entry),
+            ("exit", "Exit", self._cmd_update_exit),
+            ("perfect", "Perfect", self._cmd_update_perfect),
+            ("hex", "Hex", self._cmd_update_hex),
+            ("seed", "Seed", self._cmd_update_seed),
+            ("walls", "Walls", self._cmd_update_wall_color)
         ]
 
-        btn_width = self.view.ui_style.get("btn_width", 0)
-        btn_height = self.view.ui_style.get("btn_height", 0)
-        btn_spacing = ((self.app.window_height - self.view.pad_h
-                        - btn_height * len(btn_data)) // (len(btn_data) + 1))
+        btn_width: int = self.view.ui_style.get("btn_width", 0)
+        btn_height: int = self.view.ui_style.get("btn_height", 0)
+        btn_spacing: int = ((self.app.window_height - self.view.pad_h
+                            - btn_height * len(btn_data))
+                            // (len(btn_data) + 1))
 
         for i, b in enumerate(btn_data):
             self.view.add_button(
@@ -47,30 +56,37 @@ class SettingsScene(BaseScene):
             9999, btn_width, btn_height, self._cmd_open_menu
         )
 
-    def draw_bg(self):
-        canvas = self.view.layers.get("bg")
-        height = self.app.window_height
+    def draw_bg(self) -> None:
+        """Render background depending on current step value"""
+        canvas: Any = self.view.layers.get("bg")
+        height: int = self.app.window_height
         if self.bg_step == 2 * height:
             self.bg_step = 0
-        progress = (self.bg_step / height) % 2.0
+        progress: float = (self.bg_step / height) % 2.0
 
         for y in range(height):
-            offset_y = y / height
-            rmix = (offset_y + progress) % 2.0
-            smix = 1.0 - abs(rmix - 1.0)
-            color = self.view.get_gradient_color(self.app.colors.get("bg_1"),
-                                                 self.app.colors.get("bg_2"),
-                                                 smix)
+            offset_y: float = y / height
+            rmix: float = (offset_y + progress) % 2.0
+            smix: float = 1.0 - abs(rmix - 1.0)
+            color: int = self.view.get_gradient_color(
+                self.app.colors.get("bg_1"),
+                self.app.colors.get("bg_2"), smix
+            )
             canvas.fill_rect(0, y, canvas.width, 1, color)
 
-    def _cmd_update_width(self):
-        picks = [10, 25, 50, 75, 100, 150]
+    def _cmd_update_width(self) -> None:
+        """Rotate or reset os.environ width"""
+        picks: list[int] = [10, 25, 50, 75, 100, 150]
         try:
             if not hasattr(self, "pick_width"):
-                self.pick_width = 0
+                self.pick_width: int = 0
             else:
                 if 65507 in self.app.keypresses:
-                    os.environ["WIDTH"] = self.config.get("WIDTH")
+                    config_width: str | None = self.config.get("WIDTH")
+                    if config_width:
+                        os.environ["WIDTH"] = config_width
+                    else:
+                        os.environ["WIDTH"] = "None"
                     return
                 else:
                     self.pick_width += 1
@@ -80,14 +96,19 @@ class SettingsScene(BaseScene):
         except Exception:
             pass
 
-    def _cmd_update_height(self):
-        picks = [10, 25, 50, 75, 100, 150]
+    def _cmd_update_height(self) -> None:
+        """Rotate or reset os.environ height"""
+        picks: list[int] = [10, 25, 50, 75, 100, 150]
         try:
             if not hasattr(self, "pick_height"):
-                self.pick_height = 0
+                self.pick_height: int = 0
             else:
                 if 65507 in self.app.keypresses:
-                    os.environ["HEIGHT"] = self.config.get("HEIGHT")
+                    config_height: str | None = self.config.get("HEIGHT")
+                    if config_height:
+                        os.environ["HEIGHT"] = config_height
+                    else:
+                        os.environ["HEIGHT"] = "None"
                     return
                 else:
                     self.pick_height += 1
@@ -97,16 +118,21 @@ class SettingsScene(BaseScene):
         except Exception:
             pass
 
-    def _cmd_update_entry(self):
+    def _cmd_update_entry(self) -> None:
+        """Randomize or reset os.environ entry"""
         try:
             if 65507 in self.app.keypresses:
-                os.environ["ENTRY"] = self.config.get("ENTRY")
+                config_entry: str | None = self.config.get("ENTRY")
+                if config_entry:
+                    os.environ["ENTRY"] = config_entry
+                else:
+                    os.environ["ENTRY"] = "None"
                 return
         except Exception:
             pass
         while True:
             try:
-                coords = (",".join([
+                coords: str = (",".join([
                     str(random.randrange(0, int(os.environ.get("HEIGHT", 0)))),
                     str(random.randrange(0, int(os.environ.get("WIDTH", 0))))
                 ]))
@@ -116,16 +142,21 @@ class SettingsScene(BaseScene):
             except ValueError:
                 continue
 
-    def _cmd_update_exit(self):
+    def _cmd_update_exit(self) -> None:
+        """Randomize or reset os.environ exit"""
         try:
             if 65507 in self.app.keypresses:
-                os.environ["EXIT"] = self.config.get("EXIT")
+                config_exit: str | None = self.config.get("EXIT")
+                if config_exit:
+                    os.environ["EXIT"] = config_exit
+                else:
+                    os.environ["EXIT"] = "None"
                 return
         except Exception:
             pass
         while True:
             try:
-                coords = (",".join([
+                coords: str = (",".join([
                     str(random.randrange(0, int(os.environ.get("HEIGHT", 0)))),
                     str(random.randrange(0, int(os.environ.get("WIDTH", 0))))
                 ]))
@@ -135,10 +166,15 @@ class SettingsScene(BaseScene):
             except ValueError:
                 continue
 
-    def _cmd_update_perfect(self):
+    def _cmd_update_perfect(self) -> None:
+        """Toggle or reset os.environ perfect"""
         try:
             if 65507 in self.app.keypresses:
-                os.environ["PERFECT"] = self.config.get("PERFECT", "True")
+                config_perfect: str | None = self.config.get("PERFECT")
+                if config_perfect:
+                    os.environ["PERFECT"] = config_perfect
+                else:
+                    os.environ["PERFECT"] = "None"
                 return
             if os.environ.get("PERFECT") in [True, "True", "true", 1, "1"]:
                 os.environ["PERFECT"] = "False"
@@ -147,10 +183,15 @@ class SettingsScene(BaseScene):
         except Exception:
             pass
 
-    def _cmd_update_hex(self):
+    def _cmd_update_hex(self) -> None:
+        """Toggle or reset os.environ hex"""
         try:
             if 65507 in self.app.keypresses:
-                os.environ["HEX"] = self.config.get("HEX", "False")
+                config_hex: str | None = self.config.get("HEX")
+                if config_hex:
+                    os.environ["HEX"] = config_hex
+                else:
+                    os.environ["HEX"] = "None"
                 return
             if os.environ.get("HEX") in [True, "True", "true", 1, "1"]:
                 os.environ["HEX"] = "False"
@@ -159,24 +200,30 @@ class SettingsScene(BaseScene):
         except Exception:
             pass
 
-    def _cmd_update_seed(self):
+    def _cmd_update_seed(self) -> None:
+        """Toggle or reset os.environ seed"""
         try:
             if 65507 in self.app.keypresses:
-                os.environ["SEED"] = self.config.get("SEED", None)
+                config_seed: str | None = self.config.get("CONFIG_SEED")
+                if config_seed:
+                    os.environ["CONFIG_SEED"] = config_seed
+                else:
+                    os.environ["CONFIG_SEED"] = "None"
                 return
             os.environ["SEED"] = "Random"
         except Exception:
             pass
 
-    def _cmd_update_wall_color(self):
+    def _cmd_update_wall_color(self) -> None:
+        """Randomize or reset maze walls color"""
         if 65362 in self.app.keypresses:
             self.app.colors["walls"] = 0xffff006e
         else:
-            import random
             self.app.colors["walls"] = random.randrange(0xFF000000, 0xFFFFFFFF)
 
-    def update_height(self):
-        btn = self.view.buttons.get("height")
+    def update_height(self) -> None:
+        """Update height button label with os.environ value"""
+        btn: Any = self.view.buttons.get("height")
         try:
             if btn.is_hovered(*self.app.get_mouse_pos()):
                 if 65362 in self.app.keypresses:
@@ -193,8 +240,9 @@ class SettingsScene(BaseScene):
             pass
         btn.label = "Height:" + str(os.environ.get("HEIGHT", "None"))
 
-    def update_width(self):
-        btn = self.view.buttons.get("width")
+    def update_width(self) -> None:
+        """Update width button label with os.environ value"""
+        btn: Any = self.view.buttons.get("width")
         try:
             if btn.is_hovered(*self.app.get_mouse_pos()):
                 if 65362 in self.app.keypresses:
@@ -211,24 +259,29 @@ class SettingsScene(BaseScene):
             pass
         btn.label = "Width:" + os.environ.get("WIDTH", "None")
 
-    def update_entry(self):
-        btn = self.view.buttons.get("entry")
+    def update_entry(self) -> None:
+        """Update entry button label with os.environ value"""
+        btn: Any = self.view.buttons.get("entry")
         btn.label = "Entry:" + os.environ.get("ENTRY", "None")
 
-    def update_exit(self):
-        btn = self.view.buttons.get("exit")
+    def update_exit(self) -> None:
+        """Update exit button label with os.environ value"""
+        btn: Any = self.view.buttons.get("exit")
         btn.label = "Exit:" + os.environ.get("EXIT", "None")
 
-    def update_perfect(self):
-        btn = self.view.buttons.get("perfect")
+    def update_perfect(self) -> None:
+        """Update perfect button label with os.environ value"""
+        btn: Any = self.view.buttons.get("perfect")
         btn.label = "Perfect:" + os.environ.get("PERFECT", "False")
 
-    def update_hex(self):
-        btn = self.view.buttons.get("hex")
+    def update_hex(self) -> None:
+        """Update hex button label with os.environ value"""
+        btn: Any = self.view.buttons.get("hex")
         btn.label = "Hex:" + os.environ.get("HEX", "False")
 
-    def update_seed(self):
-        btn = self.view.buttons.get("seed")
+    def update_seed(self) -> None:
+        """Update seed button label with os.environ value"""
+        btn: Any = self.view.buttons.get("seed")
         try:
             if btn.is_hovered(*self.app.get_mouse_pos()):
                 if 65362 in self.app.keypresses:
@@ -245,11 +298,13 @@ class SettingsScene(BaseScene):
             pass
         btn.label = "Seed:" + os.environ.get("SEED", "Random")
 
-    def update_walls(self):
-        btn = self.view.buttons.get("walls")
+    def update_walls(self) -> None:
+        """Update walls button label with app colors value"""
+        btn: Any = self.view.buttons.get("walls")
         btn.label = "Walls:" + hex(self.app.colors.get("walls", 0) & 0xFFFFFF)
 
-    def update(self):
+    def update(self) -> None:
+        """Update maze display depending on current values"""
         self.draw_bg()
         self.bg_step += 10
         self.update_height()
@@ -263,5 +318,6 @@ class SettingsScene(BaseScene):
 
         super().update()
 
-    def render(self):
+    def render(self) -> None:
+        """Update current frame"""
         super().render()

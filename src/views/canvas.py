@@ -4,26 +4,30 @@ from typing import Any
 class Canvas:
     def __init__(self, app: Any, x: int, y: int,
                  z: int, width: int, height: int) -> None:
-        self.app = app
-        self.x = x
-        self.y = y
-        self.z = z
-        self.width = width
-        self.height = height
+        self.app: Any = app
+        self.x: int = x
+        self.y: int = y
+        self.z: int = z
+        self.width: int = width
+        self.height: int = height
 
-        self.ptr = self.app.mlx.mlx_new_image(self.app.mlx_ptr, width, height)
+        self.ptr: int | None = self.app.mlx.mlx_new_image(
+            self.app.mlx_ptr, width, height
+        )
         self.addr, self.bpp, self.size_line, self.endian = (
             self.app.mlx.mlx_get_data_addr(self.ptr)
         )
-        self.buffer = memoryview(self.addr)
-        self.bytes_per_pixel = self.bpp // 8
+        self.buffer: memoryview = memoryview(self.addr)
+        self.bytes_per_pixel: int = self.bpp // 8
+
         self.clear()
 
-    def get_color_bytes(self, color):
-        b = color & 0xFF
-        g = (color >> 8) & 0xFF
-        r = (color >> 16) & 0xFF
-        a = (color >> 24) & 0xFF
+    def get_color_bytes(self, color: int) -> bytes:
+        """Return bytes object from rgba color value"""
+        b: int = color & 0xFF
+        g: int = (color >> 8) & 0xFF
+        r: int = (color >> 16) & 0xFF
+        a: int = (color >> 24) & 0xFF
 
         return (bytes([b, g, r, a]) if self.endian == 0
                 else bytes([a, r, g, b]))
@@ -31,6 +35,7 @@ class Canvas:
     def fill_rect(self, x: int, y: int,
                   width: int, height: int,
                   color: int) -> None:
+        """Fill rectangle zone in memory buffer"""
         if not (
           0 <= x < self.width
           and 0 <= x + width <= self.width
@@ -39,28 +44,31 @@ class Canvas:
         ):
             return
 
-        pixel = self.get_color_bytes(color)
-        line_data = pixel * width
+        pixel: bytes = self.get_color_bytes(color)
+        line_data: bytes = pixel * width
+
         for i in range(y, y + height):
-            start = (i * self.size_line) + (x * self.bytes_per_pixel)
+            start: int = (i * self.size_line) + (x * self.bytes_per_pixel)
             self.buffer[start:(start + len(line_data))] = line_data
 
-    def draw_pixel(self, x: int, y: int, pixel: int) -> None:
+    def draw_pixel(self, x: int, y: int, pixel: bytes) -> None:
+        """Fill single pixel value in memory buffer"""
         if 0 <= x < self.width and 0 <= y < self.height:
             start = (y * self.size_line) + (x * self.bytes_per_pixel)
             self.buffer[start:(start + self.bytes_per_pixel)] = pixel
 
     def draw_line(self, x0: int, y0: int, x1: int, y1: int,
                   color: int, thickness: int = 1) -> None:
+        """Fill memory buffer with pixel values for a straight line"""
         x0, y0, x1, y1 = int(x0), int(y0), int(x1), int(y1)
         dx, dy = abs(x1 - x0), abs(y1 - y0)
         sx, sy = 1 if x0 < x1 else -1, 1 if y0 < y1 else -1
-        err = dx - dy
-        pixel = self.get_color_bytes(color)
+        err: int = dx - dy
+        pixel: bytes = self.get_color_bytes(color)
 
-        offsets = []
+        offsets: list[tuple[int, int]] = []
         if thickness > 1:
-            half = thickness // 2
+            half: int = thickness // 2
             for i in range(-half, half + 1):
                 for j in range(-half, half + 1):
                     if i*i + j*j <= half*half + 1:
@@ -81,12 +89,14 @@ class Canvas:
                 err += dx
                 y0 += sy
 
-    def clear(self):
+    def clear(self) -> None:
+        """Fill memory buffer with 0s"""
         self.buffer[:] = (
             bytes([0]) * (self.width * self.height * self.bytes_per_pixel)
         )
 
-    def destroy(self):
+    def destroy(self) -> None:
+        """Destroy Mlx memory image and set pointer to None"""
         if self.ptr:
             self.app.mlx.mlx_destroy_image(self.app.mlx_ptr, self.ptr)
             self.ptr = None

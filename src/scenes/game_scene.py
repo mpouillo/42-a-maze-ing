@@ -1,22 +1,26 @@
 from src.models.maze import MazeModel
 from src.scenes import BaseScene
 from src.views.renderers import SquareRenderer, HexRenderer
+from typing import Any, Callable, TypeAlias
+
+BtnData: TypeAlias = list[tuple[str, str, Callable[[], None]]]
 
 
 class GameScene(BaseScene):
-    def __init__(self, app) -> None:
+    def __init__(self, app: Any) -> None:
         super().__init__(app)
 
-        self.model = MazeModel()
+        self.model: Any = MazeModel()
+        self.view: Any = None
 
         if self.model.config.is_hex is True:
             self.view = HexRenderer(self.app, self.model)
         else:
             self.view = SquareRenderer(self.app, self.model)
 
-        self.pos_x = 0
-        self.pos_y = 0
-        self.help = False
+        self.pos_x: int = self.model.config.entry[1]
+        self.pos_y: int = self.model.config.entry[0]
+        self.help: bool = False
 
         self.setup_ui()
         self.view.add_layer("char", self.view.offset_x, self.view.offset_y,
@@ -25,20 +29,23 @@ class GameScene(BaseScene):
         self.view.draw_maze()
         self.view.draw_endpoints()
 
-    def setup_ui(self):
+    def setup_ui(self) -> None:
+        """Create buttons with default values"""
         self.view.clear_buttons()
 
-        btn_data = [
-            ["reset", "Reset", self.reset_game],
-            ["help", "Help OFF", self.toggle_help]
+        btn_data: BtnData = [
+            ("reset", "Reset", self.reset_game),
+            ("help", "Help OFF", self.toggle_help)
         ]
 
-        btn_width = min(self.view.ui_style.get("btn_width", 0),
-                        round(self.app.window_width // len(btn_data) * 0.8)
-                        )
-        btn_height = self.view.ui_style.get("btn_height", 0)
-        btn_spacing = ((self.app.window_width - (len(btn_data) * btn_width))
-                       // (len(btn_data) + 1))
+        btn_width: int = min(self.view.ui_style.get("btn_width", 0),
+                             round(self.app.window_width
+                                   // len(btn_data) * 0.8)
+                             )
+        btn_height: int = self.view.ui_style.get("btn_height", 0)
+        btn_spacing: int = ((self.app.window_width
+                             - (len(btn_data) * btn_width))
+                            // (len(btn_data) + 1))
 
         for i, b in enumerate(btn_data):
             self.view.add_button(
@@ -54,7 +61,8 @@ class GameScene(BaseScene):
             9999, btn_width, btn_height, self._cmd_open_menu
         )
 
-    def toggle_help(self):
+    def toggle_help(self) -> None:
+        """Toggle visibility for shortest path to exit"""
         if self.help:
             self.view.buttons.get("help").label = "Help OFF"
             self.help = False
@@ -62,39 +70,43 @@ class GameScene(BaseScene):
             self.view.buttons.get("help").label = "Help ON"
             self.help = True
 
-    def reset_game(self):
-        self.pos_x = 0
-        self.pos_y = 0
+    def reset_game(self) -> None:
+        """Move character back to start"""
+        self.pos_x = self.model.config.entry[1]
+        self.pos_y = self.model.config.entry[0]
         self.view.refresh_layers()
 
-    def draw_character(self):
-        color = self.app.colors.get("character")
-        canvas = self.view.layers.get("char")
+    def draw_character(self) -> None:
+        """Render character at current position"""
+        color: int = self.app.colors.get("character")
+        canvas: Any = self.view.layers.get("char")
         canvas.clear()
         self.view.draw_cell_center(canvas, self.pos_x, self.pos_y, color)
 
-    def end_game(self):
+    def end_game(self) -> None:
+        """Display 'YOU WIN' screen and restart game"""
         import time
-        canvas = self.view.layers.get("popup")
+        canvas: Any = self.view.layers.get("popup")
         canvas.clear()
-        font_scale = max(1, min(
+        font_scale: int = max(1, min(
             self.app.window_height, self.app.window_width) // 100
         )
-        text = "You win!"
-        text_w = (len(text) * (self.view.font_width + 1) - 1) * font_scale
-        text_h = self.view.font_height * font_scale
-        text_x = (self.app.window_width - text_w) // 2
-        text_y = (self.app.window_height - text_h) // 2
+        text: str = "You win!"
+        text_w: int = (len(text) * (self.view.font_width + 1) - 1) * font_scale
+        text_h: int = self.view.font_height * font_scale
+        text_x: int = (self.app.window_width - text_w) // 2
+        text_y: int = (self.app.window_height - text_h) // 2
 
+        # Background dim
         canvas.fill_rect(0, 0, self.app.window_width, self.app.window_height,
                          0x7F000000)
-
+        # Box background
         canvas.fill_rect(text_x - 30, text_y - 30, text_w + 80, text_h + 80,
-                         0xFF754814)
-
+                         self.app.colors.get("bg_2"))
+        # Box foreground
         canvas.fill_rect(text_x - 40, text_y - 40, text_w + 80, text_h + 80,
-                         0xFFF7931E)
-
+                         self.app.colors.get("bg_1"))
+        # Text
         self.view.draw_text(canvas, text_x, text_y, text,
                             0xFFFFFFFF, font_scale)
 
@@ -110,28 +122,16 @@ class GameScene(BaseScene):
             self.toggle_help()
         self.reset_game()
 
-    def render(self):
-        self.draw_character()
-        if self.help is True:
-            cur = (self.pos_y, self.pos_x)
-            for path in self.model.valid_paths:
-                if cur in path:
-                    self.view.draw_path(path)
-                    break
-        else:
-            self.view.clear_layers("path")
-
-        super().render()
-
     def update(self) -> None:
-        KEY_LEFT = 65361
-        KEY_UP = 65362
-        KEY_RIGHT = 65363
-        KEY_DOWN = 65364
+        """Update maze display depending on current values"""
+        KEY_LEFT: int = 65361
+        KEY_UP: int = 65362
+        KEY_RIGHT: int = 65363
+        KEY_DOWN: int = 65364
 
-        is_even = (self.pos_y % 2 == 0)
-        keys = self.app.keypresses
-        cur_cell = self.model.maze[self.pos_y][self.pos_x]
+        is_even: int = (self.pos_y % 2 == 0)
+        keys: set[int | None] = self.app.keypresses
+        cur_cell: int = self.model.maze[self.pos_y][self.pos_x]
 
         if not self.model.config.is_hex:
             if KEY_LEFT in keys and not cur_cell & 8:
@@ -180,3 +180,17 @@ class GameScene(BaseScene):
             self.end_game()
 
         super().update()
+
+    def render(self) -> None:
+        """Update current frame"""
+        self.draw_character()
+        if self.help is True:
+            cur = (self.pos_y, self.pos_x)
+            for path in self.model.valid_paths:
+                if cur in path:
+                    self.view.draw_path(path)
+                    break
+        else:
+            self.view.clear_layers("path")
+
+        super().render()

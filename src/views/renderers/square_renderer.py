@@ -1,42 +1,52 @@
-from src.models.maze import MazeModel
 from src.views.renderers import BaseRenderer
+from src.views import Canvas
+from typing import Any, TypeAlias
+
+StepTuple: TypeAlias = tuple[str, tuple[int, int], tuple[int, int]]
 
 
 class SquareRenderer(BaseRenderer):
-    def __init__(self, app, model: MazeModel) -> None:
+    def __init__(self, app: Any, model: Any) -> None:
         super().__init__(app, model)
 
-        self.wall_size = 4
+        self.wall_size: int = 4
         self.compute_scales()
-        self.prev_gen = None
+        self.prev_gen: tuple[int, int] | None = None
 
-        self.add_layer("maze", self.offset_x, self.offset_y,
-                       1, self.maze_w, self.maze_h)
         self.add_layer("path", self.offset_x, self.offset_y,
+                       1, self.maze_w, self.maze_h)
+        self.add_layer("maze", self.offset_x, self.offset_y,
                        2, self.maze_w, self.maze_h)
         self.add_layer("endpoints", self.offset_x, self.offset_y,
                        3, self.maze_w, self.maze_h)
 
-    def compute_scales(self):
-        available_w = self.app.window_width - self.pad_w * 2 - self.wall_size
-        available_h = self.app.window_height - self.pad_h * 2 - self.wall_size
-        cols = self.model.config.width
-        rows = self.model.config.height
+    def compute_scales(self) -> None:
+        """Calculate required sizes for maze display"""
+        available_w: int = (self.app.window_width - self.pad_w * 2
+                            - self.wall_size)
+        available_h: int = (self.app.window_height - self.pad_h * 2
+                            - self.wall_size)
+        cols: int = self.model.config.width
+        rows: int = self.model.config.height
 
-        self.cell_size = max(1, min(available_w // cols, available_h // rows))
+        self.cell_size: int = max(1, min(available_w // cols,
+                                         available_h // rows))
         if self.wall_size > 1 and self.cell_size <= self.wall_size * 2:
             self.wall_size = max(1, self.wall_size - 1)
             self.compute_scales()
 
-        self.maze_w = cols * self.cell_size + self.wall_size
-        self.maze_h = rows * self.cell_size + self.wall_size
-        self.offset_x = (self.app.window_width - self.maze_w) // 2
-        self.offset_y = (self.app.window_height - self.maze_h) // 2
+        self.maze_w: int = cols * self.cell_size + self.wall_size
+        self.maze_h: int = rows * self.cell_size + self.wall_size
+        self.offset_x: int = (self.app.window_width - self.maze_w) // 2
+        self.offset_y: int = (self.app.window_height - self.maze_h) // 2
 
-    def draw_maze(self):
-        wall_color = self.app.colors.get("walls")
-        cell_color = self.app.colors.get("cell")
-        canvas = self.layers.get("maze")
+    def draw_maze(self) -> None:
+        """render maze to maze layer"""
+        wall_color: int = self.app.colors.get("walls")
+        cell_color: int = self.app.colors.get("cell")
+        canvas: Any = self.layers.get("maze")
+        if not canvas:
+            return
         canvas.clear()
 
         for y, row in enumerate(self.model.maze):
@@ -45,54 +55,59 @@ class SquareRenderer(BaseRenderer):
                 if value == 0xF:
                     self.draw_cell_center(canvas, x, y, cell_color)
 
-    def draw_path(self, path: list, color: int = None):
-        color_start = self.app.colors.get("path_1")
-        color_end = self.app.colors.get("path_2")
-        canvas = self.layers.get("path")
+    def draw_path(self, path: list[tuple[int, int]]) -> None:
+        """Render path to path layer"""
+        color_start: int = self.app.colors.get("path_1")
+        color_end: int = self.app.colors.get("path_2")
+        canvas: Any = self.layers.get("path")
+        if not canvas:
+            return
         canvas.clear()
 
         for i, (y1, x1) in enumerate(path):
-            color = self.get_gradient_color(color_start, color_end,
-                                            i / max(1, len(path) - 1))
+            color: int = self.get_gradient_color(
+                color_start, color_end, i / max(1, len(path) - 1)
+            )
             self.draw_cell_center(canvas, x1, y1, color)
             if i == 0:
                 continue
             (y2, x2) = path[i - 1]
-            if y2 < y1:    # North
+            if y2 < y1:    # Top
                 wall = 1
-            elif y2 > y1:  # South
+            elif y2 > y1:  # Bottom
                 wall = 4
-            elif x2 < x1:  # West
+            elif x2 < x1:  # Left
                 wall = 8
-            elif x2 > x1:  # East
+            elif x2 > x1:  # Right
                 wall = 2
             self.draw_cell_walls(canvas, x1, y1, wall, False, color)
 
-    def draw_step(self, step_data: dict):
-        step_color = self.app.colors.get("step")
+    def draw_step(self, step_data: StepTuple) -> None:
+        """Render step to either path or maze layer"""
+        step_color: int = self.app.colors.get("step")
         cmd, (y1, x1), (y2, x2) = step_data
 
-        if y2 < y1:    # North
+        if y2 < y1:    # Top
             wall = 1
-        elif y2 > y1:  # South
+        elif y2 > y1:  # Bottom
             wall = 4
-        elif x2 < x1:  # West
+        elif x2 < x1:  # Left
             wall = 8
-        elif x2 > x1:  # East
+        elif x2 > x1:  # Right
             wall = 2
         else:
             return
 
         match cmd:
             case 'remove':
-                maze_canvas = self.layers.get("maze")
+                maze_canvas: Any = self.layers.get("maze")
                 if self.prev_gen:
                     self.draw_cell_center(maze_canvas, *self.prev_gen)
                 self.draw_cell_center(maze_canvas, x1, y1)
                 self.draw_cell_center(maze_canvas, x2, y2, step_color)
                 self.draw_cell_walls(maze_canvas, x1, y1, wall)
             case 'fill':
-                path_canvas = self.layers.get("path")
+                path_canvas: Any = self.layers.get("path")
                 self.draw_cell_center(path_canvas, x1, y1,
                                       step_color & 0x7FFFFFFF)
                 self.draw_cell_center(path_canvas, x2, y2, step_color)
@@ -103,8 +118,11 @@ class SquareRenderer(BaseRenderer):
             case _:
                 pass
 
-    def draw_endpoints(self):
-        canvas = self.layers.get("endpoints")
+        self.prev_gen = (x2, y2)
+
+    def draw_endpoints(self) -> None:
+        """Draw entry and exit to endpoints layer"""
+        canvas: Any = self.layers.get("endpoints")
         self.draw_cell_center(canvas, self.model.config.entry[1],
                               self.model.config.entry[0],
                               self.app.colors.get("entry"))
@@ -112,34 +130,43 @@ class SquareRenderer(BaseRenderer):
                               self.model.config.exit[0],
                               self.app.colors.get("exit"))
 
-    def draw_cell_center(self, canvas, x, y, color=0xFF000000):
-        cell = self.cell_size
-        wall = self.wall_size
+    def draw_cell_center(self, canvas: Canvas, x: int, y: int,
+                         color: int = 0xFF000000) -> None:
+        """Draw square center of cell to canvas"""
+        cell: int = self.cell_size
+        wall: int = self.wall_size
         canvas.fill_rect(x * cell + wall, y * cell + wall,
                          cell - wall, cell - wall, color)
 
-    def draw_cell_walls(self, canvas, x, y, value=0,
-                        corners=False, color=0xFF000000) -> None:
-        cell = self.cell_size
-        wall = self.wall_size
+    def draw_cell_walls(self, canvas: Canvas, x: int, y: int,
+                        value: int = 0, corners: bool = False,
+                        color: int = 0xFF000000) -> None:
+        """Draw walls of cell to canvas"""
+        cell: int = self.cell_size
+        wall: int = self.wall_size
         x *= cell
         y *= cell
 
+        TOP: int = 1
+        RIGHT: int = 2
+        BOTTOM: int = 4
+        LEFT: int = 8
+
         if corners is True:
-            if value & 1:   # Top
+            if value & TOP:
                 canvas.fill_rect(x, y, cell + wall, wall, color)
-            if value & 4:   # Bottom
+            if value & BOTTOM:
                 canvas.fill_rect(x, y + cell, cell + wall, wall, color)
-            if value & 2:   # Right
+            if value & RIGHT:
                 canvas.fill_rect(x + cell, y, wall, cell + wall, color)
-            if value & 8:   # Left
+            if value & LEFT:
                 canvas.fill_rect(x, y, wall, cell + wall, color)
         else:
-            if value & 1:   # Top
+            if value & TOP:
                 canvas.fill_rect(x + wall, y, cell - wall, wall, color)
-            if value & 4:   # Bottom
+            if value & BOTTOM:
                 canvas.fill_rect(x + wall, y + cell, cell - wall, wall, color)
-            if value & 2:   # Right
+            if value & RIGHT:
                 canvas.fill_rect(x + cell, y + wall, wall, cell - wall, color)
-            if value & 8:   # Left
+            if value & LEFT:
                 canvas.fill_rect(x, y + wall, wall, cell - wall, color)

@@ -1,18 +1,23 @@
 from src.models.maze import MazeModel
 from src.scenes import BaseScene
 from src.views.renderers import SquareRenderer, HexRenderer
+from typing import Any, Callable, TypeAlias
+
+BtnData: TypeAlias = list[tuple[str, str, Callable[[], None]]]
 
 
 class DisplayScene(BaseScene):
-    def __init__(self, app) -> None:
+    def __init__(self, app: Any) -> None:
         super().__init__(app)
-        self.solving = False
-        self.generating = False
-        self.solve_step = 0
-        self.gen_step = 0
-        self.current_path = 0
 
-        self.model = MazeModel()
+        self.solving: bool = False
+        self.generating: bool = False
+        self.solve_step: int = 0
+        self.gen_step: int = 0
+        self.current_path: int = 0
+
+        self.model: Any = MazeModel()
+        self.view: Any = None
 
         if self.model.config.is_hex is True:
             self.view = HexRenderer(self.app, self.model)
@@ -23,20 +28,22 @@ class DisplayScene(BaseScene):
         self.view.draw_maze()
         self.view.draw_endpoints()
 
-    def setup_ui(self):
+    def setup_ui(self) -> None:
+        """Create buttons with default values"""
         self.view.clear_buttons()
 
-        btn_data = [
-            ["regen", "Generate", self._cmd_generate_maze],
-            ["solve", "Solve", self._cmd_solve_maze],
-            ["paths", "Toggle paths", self._cmd_toggle_paths],
+        btn_data: BtnData = [
+            ("regen", "Generate", self._cmd_generate_maze),
+            ("solve", "Solve", self._cmd_solve_maze),
+            ("paths", "Toggle paths", self._cmd_toggle_paths),
         ]
 
-        btn_width = min(self.view.ui_style.get("btn_width", 0), round(
+        btn_width: int = min(self.view.ui_style.get("btn_width", 0), round(
             self.app.window_width // len(btn_data) * 0.8))
-        btn_height = self.view.ui_style.get("btn_height", 0)
-        btn_spacing = ((self.app.window_width - (len(btn_data) * btn_width))
-                       // (len(btn_data) + 1))
+        btn_height: int = self.view.ui_style.get("btn_height", 0)
+        btn_spacing: int = ((self.app.window_width
+                             - (len(btn_data) * btn_width))
+                            // (len(btn_data) + 1))
 
         for i, b in enumerate(btn_data):
             self.view.add_button(
@@ -52,7 +59,8 @@ class DisplayScene(BaseScene):
             9999, btn_width, btn_height, self._cmd_open_menu
         )
 
-    def _cmd_generate_maze(self):
+    def _cmd_generate_maze(self) -> None:
+        """Start or skip maze generation display"""
         self.solving = False
 
         if self.generating:
@@ -68,7 +76,8 @@ class DisplayScene(BaseScene):
             self.gen_step = 0
             self.generating = True
 
-    def _cmd_solve_maze(self):
+    def _cmd_solve_maze(self) -> None:
+        """Start or skip maze solving display"""
         if self.generating:
             return
 
@@ -82,7 +91,8 @@ class DisplayScene(BaseScene):
             self.solve_step = 0
             self.solving = True
 
-    def _cmd_toggle_paths(self):
+    def _cmd_toggle_paths(self) -> None:
+        """Toggle visibility for valid paths"""
         if self.solving:
             self.solving = False
 
@@ -92,10 +102,6 @@ class DisplayScene(BaseScene):
 
         if not self.model.valid_paths:
             return
-
-        # Clamp current_path before using it
-        if self.current_path >= len(self.model.valid_paths):
-            self.current_path = 0
 
         self.view.draw_path(self.model.valid_paths[self.current_path])
         self.view.draw_endpoints()
@@ -112,10 +118,11 @@ class DisplayScene(BaseScene):
         )
 
         self.current_path += 1
-        if self.current_path > len(self.model.valid_paths) - 1:
+        if self.current_path >= len(self.model.valid_paths):
             self.current_path = 0
 
     def update(self) -> None:
+        """Update maze display depending on current values"""
         if self.generating is True:
             if self.gen_step >= len(self.model.gen_steps):
                 self.view.draw_maze()
@@ -146,5 +153,6 @@ class DisplayScene(BaseScene):
 
         super().update()
 
-    def render(self, *args):
+    def render(self) -> None:
+        """Update current frame"""
         super().render()

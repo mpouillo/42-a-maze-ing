@@ -9,3 +9,5 @@ __all__ = [
     "HexRenderer",
     "SquareRenderer"
 ]
+
+__author__ = "mpouillo"

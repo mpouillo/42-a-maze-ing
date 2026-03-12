@@ -7,6 +7,7 @@ from dotenv import load_dotenv
 
 
 def get_config_file() -> str:
+    """Parse sys args for config filename, check access and return filename."""
     if len(sys.argv) != 2:
         sys.exit("Incorrect usage. "
                  "Run with: 'python3 a_maze_ing.py [config_file]")
@@ -18,6 +19,7 @@ def get_config_file() -> str:
 
 
 def main() -> None:
+    """Get config from args and run application."""
     config_file = get_config_file()
     load_dotenv(config_file)
     app = Application(config_file)
