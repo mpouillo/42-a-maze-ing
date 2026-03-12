@@ -205,6 +205,7 @@ class BaseRenderer:
         for character in text.lower():
             char_data = self.fonts_dict.get(character)
             if not char_data:
+                char_offset += (self.font_width + 1) * font_scale
                 continue
             for y, row in enumerate(char_data):
                 y *= font_scale
