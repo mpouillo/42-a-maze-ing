@@ -34,8 +34,8 @@ class SquareRenderer(BaseRenderer):
         self.offset_y = (self.app.window_height - self.maze_h) // 2
 
     def draw_maze(self):
-        wall_color = self.colors.get("walls")
-        cell_color = self.colors.get("cell")
+        wall_color = self.app.colors.get("walls")
+        cell_color = self.app.colors.get("cell")
         canvas = self.layers.get("maze")
         canvas.clear()
 
@@ -46,8 +46,8 @@ class SquareRenderer(BaseRenderer):
                     self.draw_cell_center(canvas, x, y, cell_color)
 
     def draw_path(self, path: list, color: int = None):
-        color_start = self.colors.get("path_1")
-        color_end = self.colors.get("path_2")
+        color_start = self.app.colors.get("path_1")
+        color_end = self.app.colors.get("path_2")
         canvas = self.layers.get("path")
         canvas.clear()
 
@@ -69,7 +69,7 @@ class SquareRenderer(BaseRenderer):
             self.draw_cell_walls(canvas, x1, y1, wall, False, color)
 
     def draw_step(self, step_data: dict):
-        step_color = self.colors.get("step")
+        step_color = self.app.colors.get("step")
         cmd, (y1, x1), (y2, x2) = step_data
 
         if y2 < y1:    # North
@@ -107,10 +107,10 @@ class SquareRenderer(BaseRenderer):
         canvas = self.layers.get("endpoints")
         self.draw_cell_center(canvas, self.model.config.entry[1],
                               self.model.config.entry[0],
-                              self.colors.get("entry"))
+                              self.app.colors.get("entry"))
         self.draw_cell_center(canvas, self.model.config.exit[1],
                               self.model.config.exit[0],
-                              self.colors.get("exit"))
+                              self.app.colors.get("exit"))
 
     def draw_cell_center(self, canvas, x, y, color=0xFF000000):
         cell = self.cell_size

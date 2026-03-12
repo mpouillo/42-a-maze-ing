@@ -21,23 +21,12 @@ class BaseRenderer:
             "btn_bg": 0xFF333333,
             "btn_text": 0xFFFFFFFF,
             "btn_border": 0xFF555555,
-            "btn_hover": 0xff8338ec,
+            "btn_hover": 0xff94167f,
             "btn_disabled": 0xFF404040,
             "btn_text": 0xFFFFFFFF,
             "btn_text_disabled": 0xFF7F7F7F,
             "border_weight": 4,
             "font_scale": 3
-        }
-
-        self.colors = {
-            "cell": 0xffffbe0b,
-            "character": 0xffffbe0b,
-            "entry": 0xFF00FF00,
-            "exit": 0xFFFF0000,
-            "path_1": 0xff3a86ff,
-            "path_2": 0xff8338ec,
-            "walls": 0xffff006e,
-            "step": 0xfffb5607
         }
 
         self.add_layer("bg", 0, 0, 0, self.app.window_width,
@@ -113,8 +102,8 @@ class BaseRenderer:
             self.layers.pop(name)
 
     def update_color(self, name: str, new_color: int) -> None:
-        if name in self.colors:
-            self.colors[name] = new_color
+        if name in self.app.colors:
+            self.app.colors[name] = new_color
 
     def get_gradient_color(self, color_1, color_2, mix):
         alpha_1 = (color_1 >> 24) & 0xFF

@@ -14,7 +14,7 @@ class MazeConfig:
     is_hex: bool
 
     @staticmethod
-    def from_env() -> 'MazeConfig':
+    def from_env() -> "MazeConfig":
         """
         Factory method to create a MazeConfig instance from a .env file.
         Performs all validation logic before creating the object.
@@ -32,7 +32,7 @@ class MazeConfig:
 
         # 2. Entry Point
         try:
-            entry_part = str(os.environ.get("ENTRY", "0,0")).strip().split(',')
+            entry_part = str(os.environ.get("ENTRY", "0,0")).strip().split(",")
             if len(entry_part) != 2:
                 raise ValueError("Format error")
             entry = (int(entry_part[0]), int(entry_part[1]))
@@ -41,7 +41,7 @@ class MazeConfig:
 
         # 3. Exit Point
         try:
-            exit_parts = str(os.environ.get("EXIT", "0,0")).strip().split(',')
+            exit_parts = str(os.environ.get("EXIT", "0,0")).strip().split(",")
             if len(exit_parts) != 2:
                 raise ValueError("Format error")
             exit_point = (int(exit_parts[0]), int(exit_parts[1]))
@@ -54,13 +54,16 @@ class MazeConfig:
 
         erow, ecol = entry
         if not (0 <= erow < height and 0 <= ecol < width):
-            raise ValueError(f"ENTRY {entry} is outside maze bounds"
-                             f" ({height}x{width})")
+            raise ValueError(
+                f"ENTRY {entry} is outside maze bounds" f" ({height}x{width})"
+            )
 
         xrow, xcol = exit_point
         if not (0 <= xrow < height and 0 <= xcol < width):
-            raise ValueError(f"EXIT {exit_point} is outside maze bounds"
-                             f" ({height}x{width})")
+            raise ValueError(
+                f"EXIT {exit_point} is outside maze bounds"
+                f" ({height}x{width})"
+            )
 
         # 5. Seed
         seed_val: Optional[int] = None
@@ -78,9 +81,7 @@ class MazeConfig:
         elif perfect_str in ["True", "1"]:
             perfect = True
         else:
-            raise ValueError(
-                "PERFECT is not a bool : True(1) or False(0)"
-            )
+            raise ValueError("PERFECT is not a bool : True(1) or False(0)")
 
         hex_str = str(os.environ.get("HEX", "False"))
         if hex_str in ["False", "0"]:
@@ -88,9 +89,7 @@ class MazeConfig:
         elif hex_str in ["True", "1"]:
             is_hex = True
         else:
-            raise ValueError(
-                "HEX is not a bool : True(1) or False(0)"
-            )
+            raise ValueError("HEX is not a bool : True(1) or False(0)")
 
         return MazeConfig(
             height=height,
@@ -99,5 +98,5 @@ class MazeConfig:
             exit=exit_point,
             seed=seed_val,
             perfect=perfect,
-            is_hex=is_hex
+            is_hex=is_hex,
         )

@@ -30,7 +30,7 @@ class GameScene(BaseScene):
 
         btn_data = [
             ["reset", "Reset", self.reset_game],
-            ["help", "Help OFF", self.show_help]
+            ["help", "Help OFF", self.toggle_help]
         ]
 
         btn_width = min(self.view.ui_style.get("btn_width", 0),
@@ -54,7 +54,7 @@ class GameScene(BaseScene):
             9999, btn_width, btn_height, self._cmd_open_menu
         )
 
-    def show_help(self):
+    def toggle_help(self):
         if self.help:
             self.view.buttons.get("help").label = "Help OFF"
             self.help = False
@@ -68,7 +68,7 @@ class GameScene(BaseScene):
         self.view.refresh_layers()
 
     def draw_character(self):
-        color = self.view.colors.get("character")
+        color = self.app.colors.get("character")
         canvas = self.view.layers.get("char")
         canvas.clear()
         self.view.draw_cell_center(canvas, self.pos_x, self.pos_y, color)
@@ -106,6 +106,8 @@ class GameScene(BaseScene):
         canvas.clear()
         self.model.generate_new_maze()
         self.view.draw_maze()
+        if self.help:
+            self.toggle_help()
         self.reset_game()
 
     def render(self):

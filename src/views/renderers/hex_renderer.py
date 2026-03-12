@@ -9,6 +9,7 @@ class HexRenderer(BaseRenderer):
 
         self.wall_size = 4
         self.compute_scales()
+        print(self.wall_size)
         self.prev_gen = None
 
         self.add_layer("maze", self.offset_x, self.offset_y,
@@ -41,8 +42,8 @@ class HexRenderer(BaseRenderer):
         self.offset_y = (self.app.window_height - self.maze_h) // 2
 
     def draw_maze(self):
-        wall_color = self.colors.get("walls")
-        cell_color = self.colors.get("cell")
+        wall_color = self.app.colors.get("walls")
+        cell_color = self.app.colors.get("cell")
         canvas = self.layers.get("maze")
         canvas.clear()
 
@@ -53,8 +54,8 @@ class HexRenderer(BaseRenderer):
                 self.draw_cell_walls(canvas, x, y, value, wall_color)
 
     def draw_path(self, path: list, color: int = None):
-        color_start = self.colors.get("path_1")
-        color_end = self.colors.get("path_2")
+        color_start = self.app.colors.get("path_1")
+        color_end = self.app.colors.get("path_2")
         canvas = self.layers.get("path")
         canvas.clear()
 
@@ -70,7 +71,7 @@ class HexRenderer(BaseRenderer):
             self.draw_cell_walls(canvas, x1, y1, wall, color)
 
     def draw_step(self, step_data: dict):
-        step_color = self.colors.get("step")
+        step_color = self.app.colors.get("step")
         cmd, (y1, x1), (y2, x2) = step_data
 
         wall = self.get_wall_direction(y1, x1, y2, x2)
@@ -102,11 +103,11 @@ class HexRenderer(BaseRenderer):
         canvas = self.layers.get("endpoints")
         self.draw_cell_center(
             canvas, self.model.config.entry[1], self.model.config.entry[0],
-            self.colors.get("entry")
+            self.app.colors.get("entry")
         )
         self.draw_cell_center(
             canvas, self.model.config.exit[1], self.model.config.exit[0],
-            self.colors.get("exit")
+            self.app.colors.get("exit")
         )
 
     def get_center(self, x, y):

@@ -21,6 +21,19 @@ class Application:
         self.mouse_autorepeat = False
         self.mouse_pos = (None, None)
 
+        self.colors = {
+            "cell": 0xfff9ac53,
+            "character": 0xff0000ff,
+            "entry": 0xFF00FF00,
+            "exit": 0xFFFF0000,
+            "path_1": 0xff153cb4,
+            "path_2": 0xff300350,
+            "walls": 0xffe93479,
+            "step": 0xfff62e97,
+            "bg_1": 0xff94167f,
+            "bg_2": 0xfff62e97
+        }
+
         self.mlx = Mlx()
         self.mlx_ptr = self.mlx.mlx_init()
         self.win_ptr = self.mlx.mlx_new_window(

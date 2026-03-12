@@ -7,7 +7,7 @@ class MazeFileManager:
     def __init__(self, config: MazeConfig):
         self.config = config
 
-    def write_maze(self, file_path: str, maze: np.ndarray) -> None:
+    def write_maze(self, file_path: str, maze: np.ndarray[Any, Any]) -> None:
         """Writes the maze grid and entry/exit points to the file."""
         with open(file_path, "w") as f:
             if self.config.is_hex:
@@ -31,8 +31,9 @@ class MazeFileManager:
             with open(file_path, "a") as f:
                 f.write(solution_str)
 
-    def resolve_to_string(self, maze: np.ndarray,
-                          maze_gen_instance: Any) -> str:
+    def resolve_to_string(
+        self, maze: np.ndarray[Any, Any], maze_gen_instance: Any
+    ) -> str:
         """
         Returns the solution string.
         """
@@ -72,7 +73,7 @@ class MazeFileManager:
 
     # --- Private Helpers ---
 
-    def _resolve_rect(self, maze: np.ndarray) -> str:
+    def _resolve_rect(self, maze: np.ndarray[Any, Any]) -> str:
         row, col = self.config.entry
         prev: Optional[Tuple[int, int]] = None
         path_chars = []
@@ -113,7 +114,7 @@ class MazeFileManager:
 
         return "".join(path_chars)
 
-    def _resolve_hex(self, maze: np.ndarray, gen: Any) -> str:
+    def _resolve_hex(self, maze: np.ndarray[Any, Any], gen: Any) -> str:
         row, col = self.config.entry
         prev: Optional[Tuple[int, int]] = None
         path_chars = []
@@ -137,9 +138,14 @@ class MazeFileManager:
 
         return "".join(path_chars)
 
-    def _get_next_hex_step(self, row: int, col: int, val: int,
-                           prev: Optional[Tuple[int, int]],
-                           gen: Any) -> Optional[Tuple[int, int, str]]:
+    def _get_next_hex_step(
+        self,
+        row: int,
+        col: int,
+        val: int,
+        prev: Optional[Tuple[int, int]],
+        gen: Any,
+    ) -> Optional[Tuple[int, int, str]]:
         """Determines the next step for Hex maze based
         on walls and previous position."""
 
@@ -147,26 +153,26 @@ class MazeFileManager:
         # Assuming gen has attributes: TOP_RIGHT, RIGHT, BOTTOM_RIGHT,
         # BOTTOM_LEFT, LEFT, TOP_LEFT
 
-        is_even = (row % 2 == 0)
+        is_even = row % 2 == 0
 
         # Directions: (d_row, d_col, wall_mask, char_code)
         if is_even:
             moves = [
-                (-1, 0,  gen.TOP_RIGHT,    'A'),
-                (0,  1,  gen.RIGHT,        'B'),
-                (1,  0,  gen.BOTTOM_RIGHT, 'C'),
-                (1, -1,  gen.BOTTOM_LEFT,  'D'),
-                (0, -1,  gen.LEFT,         'E'),
-                (-1, -1, gen.TOP_LEFT,     'F')
+                (-1, 0, gen.TOP_RIGHT, "A"),
+                (0, 1, gen.RIGHT, "B"),
+                (1, 0, gen.BOTTOM_RIGHT, "C"),
+                (1, -1, gen.BOTTOM_LEFT, "D"),
+                (0, -1, gen.LEFT, "E"),
+                (-1, -1, gen.TOP_LEFT, "F"),
             ]
         else:
             moves = [
-                (-1, 1,  gen.TOP_RIGHT,    'A'),
-                (0,  1,  gen.RIGHT,        'B'),
-                (1,  1,  gen.BOTTOM_RIGHT, 'C'),
-                (1,  0,  gen.BOTTOM_LEFT,  'D'),
-                (0, -1,  gen.LEFT,         'E'),
-                (-1, 0,  gen.TOP_LEFT,     'F')
+                (-1, 1, gen.TOP_RIGHT, "A"),
+                (0, 1, gen.RIGHT, "B"),
+                (1, 1, gen.BOTTOM_RIGHT, "C"),
+                (1, 0, gen.BOTTOM_LEFT, "D"),
+                (0, -1, gen.LEFT, "E"),
+                (-1, 0, gen.TOP_LEFT, "F"),
             ]
 
         for dr, dc, mask, char in moves:
@@ -177,8 +183,9 @@ class MazeFileManager:
 
         return None
 
-    def _get_hex_direction(self, curr: Tuple[int, int],
-                           nxt: Tuple[int, int]) -> str:
+    def _get_hex_direction(
+        self, curr: Tuple[int, int], nxt: Tuple[int, int]
+    ) -> str:
         """Helper to find direction char between two hex cells"""
         r, c = curr
         nr, nc = nxt

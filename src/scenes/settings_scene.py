@@ -24,7 +24,8 @@ class SettingsScene(BaseScene):
             ["exit", "Exit", self._cmd_update_exit],
             ["perfect", "Perfect", self._cmd_update_perfect],
             ["hex", "Hex", self._cmd_update_hex],
-            ["seed", "Seed", self._cmd_update_seed]
+            ["seed", "Seed", self._cmd_update_seed],
+            ["walls", "Walls", self._cmd_update_wall_color]
         ]
 
         btn_width = self.view.ui_style.get("btn_width", 0)
@@ -57,7 +58,9 @@ class SettingsScene(BaseScene):
             offset_y = y / height
             rmix = (offset_y + progress) % 2.0
             smix = 1.0 - abs(rmix - 1.0)
-            color = self.view.get_gradient_color(0xffffbe0b, 0xffff006e, smix)
+            color = self.view.get_gradient_color(self.app.colors.get("bg_1"),
+                                                 self.app.colors.get("bg_2"),
+                                                 smix)
             canvas.fill_rect(0, y, canvas.width, 1, color)
 
     def _cmd_update_width(self):
@@ -165,6 +168,13 @@ class SettingsScene(BaseScene):
         except Exception:
             pass
 
+    def _cmd_update_wall_color(self):
+        if 65362 in self.app.keypresses:
+            self.app.colors["walls"] = 0xffff006e
+        else:
+            import random
+            self.app.colors["walls"] = random.randrange(0xFF000000, 0xFFFFFFFF)
+
     def update_height(self):
         btn = self.view.buttons.get("height")
         try:
@@ -235,6 +245,10 @@ class SettingsScene(BaseScene):
             pass
         btn.label = "Seed:" + os.environ.get("SEED", "Random")
 
+    def update_walls(self):
+        btn = self.view.buttons.get("walls")
+        btn.label = "Walls:" + hex(self.app.colors.get("walls", 0) & 0xFFFFFF)
+
     def update(self):
         self.draw_bg()
         self.bg_step += 10
@@ -245,6 +259,7 @@ class SettingsScene(BaseScene):
         self.update_perfect()
         self.update_hex()
         self.update_seed()
+        self.update_walls()
 
         super().update()
 
