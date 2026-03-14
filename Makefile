@@ -18,6 +18,7 @@ ENV_PYTHON = $(ENV_DIR)/bin/python
 
 SYSTEM_DEPS =	flake8 \
 				mypy \
+				pudb \
 				libvulkan-headers \
 				libvulkan-loader \
 				xorg-libxcb \
@@ -117,7 +118,13 @@ run:
 	fi
 
 debug:
-	@echo "TODO"
+	@if [ -f "$(ENV_PYTHON)" ]; then \
+		echo "Running in debug mode..."; \
+		$(ENV_PYTHON) -m pudb $(NAME) $(CONFIG_FILE); \
+	else \
+		echo "Conda environment not found. Run 'make install' first."; \
+		exit 1; \
+	fi
 
 lint:
 	@if [ -f "$(ENV_PYTHON)" ]; then \
