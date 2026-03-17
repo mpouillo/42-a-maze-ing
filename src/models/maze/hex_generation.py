@@ -2,8 +2,9 @@ from collections import deque
 from heapq import heappush, heappop
 from random import randint, seed
 import numpy as np
+import os
 from typing import Any, List, Tuple, Optional, Dict, Generator, Set
-from src.models.maze.maze_config import MazeConfig
+from .maze_config import MazeConfig
 
 
 class HexGenerator:
@@ -58,7 +59,12 @@ class HexGenerator:
     def set_logo_as_visited(self) -> None:
         """Mark logo area as visited so the maze generates around it"""
         try:
-            with open("src/models/maze/logo.txt", "r") as f:
+            current_dir = os.path.dirname(os.path.abspath(__file__))
+            logo_path = os.path.join(current_dir, "logo.txt")
+
+            if not os.path.exists(logo_path):
+                return
+            with open(logo_path, "r") as f:
                 logo_rows = [line for line in f.read().splitlines()
                              if line.strip()]
         except FileNotFoundError:
@@ -539,6 +545,7 @@ class HexGenerator:
     ) -> Generator[Any, None, None]:
         self.bfs_paths = []
         exclude: Set[Tuple[Tuple[int, int], ...]] = set()
+        first = None
 
         first_out: List[List[Tuple[int, int]]] = []
         for step in self._astar_with_forbidden_steps(maze, first_out):
@@ -558,7 +565,7 @@ class HexGenerator:
             longest = longest_out[0]
             exclude.add(tuple(longest))
 
-        if longest is not None:
+        if longest is not None and first is not None:
             shortest_len = len(first)
             longest_len = len(longest)
             length_range = longest_len - shortest_len

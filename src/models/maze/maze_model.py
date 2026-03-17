@@ -2,10 +2,10 @@ import os
 import numpy as np
 from typing import Union, Generator, Tuple, Optional, TypeAlias, Any
 
-from src.models.maze.maze_config import MazeConfig
-from src.models.maze.sqr_generation import SqrGenerator
-from src.models.maze.hex_generation import HexGenerator
-from src.models.maze.file_manager import MazeFileManager
+from .maze_config import MazeConfig
+from .sqr_generation import SqrGenerator
+from .hex_generation import HexGenerator
+from .file_manager import MazeFileManager
 
 StepList: TypeAlias = list[dict[tuple[int, int], int]]
 StepGenerator: TypeAlias = Generator[

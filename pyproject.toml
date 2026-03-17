@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "mazegen"
 version = "1.0.0"
 description = "A maze generator package"
-readme = "MazeGenerator.md"
+readme = "src/models/maze/README.md"
 authors = [
     { name = "acampion" },
     { name = "mpuillo"},
@@ -17,5 +17,5 @@ dependencies = [
 ]
 
 [tool.setuptools]
-package-dir = {"" = "src/models"}
-packages = ["maze"]
+packages = ["mazegen"]
+package-dir = {"mazegen" = "src/models/maze"}

@@ -1,6 +1,6 @@
 import numpy as np
 from typing import List, Tuple, Optional, Any
-from src.models.maze.maze_config import MazeConfig
+from .maze_config import MazeConfig
 
 
 class MazeFileManager:
