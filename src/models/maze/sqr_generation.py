@@ -11,7 +11,7 @@ StepGenerator: TypeAlias = Generator[
 ]
 
 
-class MazeGenerator:
+class SqrGenerator:
 
     TOP = 1
     RIGHT = 2

@@ -1,7 +1,7 @@
-from .maze_model import MazeModel
+from .maze_model import MazeGenerator
 
 __all__ = [
-    "MazeModel"
+    "MazeGenerator"
 ]
 
 __author__ = "acampion"

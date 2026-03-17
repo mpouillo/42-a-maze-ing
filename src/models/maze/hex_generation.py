@@ -6,7 +6,7 @@ from typing import Any, List, Tuple, Optional, Dict, Generator, Set
 from src.models.maze.maze_config import MazeConfig
 
 
-class HexMazeGenerator:
+class HexGenerator:
     TOP_RIGHT = 1
     RIGHT = 2
     BOTTOM_RIGHT = 4

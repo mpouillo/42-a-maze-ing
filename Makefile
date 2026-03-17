@@ -109,6 +109,12 @@ create_env:
 	@echo "Linking $(CONDA_DIR) to $(CONDA_LINK)..."
 	@ln -snf $(CONDA_DIR) $(CONDA_LINK)
 
+build:
+	@echo "Building the mazegen package..."
+	@$(ENV_PYTHON) -m pip install build
+	@$(ENV_PYTHON) -m build --wheel --outdir .
+	@rm -rf build/ src/models/*.egg-info
+
 run:
 	@if [ -f "$(ENV_PYTHON)" ]; then \
 		$(ENV_PYTHON) $(NAME) $(CONFIG_FILE); \
@@ -158,5 +164,5 @@ fclean: clean remove_conda
 
 re: fclean all
 
-.PHONY: install run debug clean fclean re all
+.PHONY: install run debug clean fclean re all build
 .DEFAULT_GOAL = all

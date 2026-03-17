@@ -1,4 +1,4 @@
-from src.models.maze import MazeModel
+from src.models.maze import MazeGenerator
 from src.scenes import BaseScene
 from src.views.renderers import SquareRenderer, HexRenderer
 from typing import Any, Callable, TypeAlias
@@ -16,7 +16,7 @@ class DisplayScene(BaseScene):
         self.gen_step: int = 0
         self.current_path: int = 0
 
-        self.model: Any = MazeModel()
+        self.model: Any = MazeGenerator()
         self.view: Any = None
 
         if self.model.config.is_hex is True:
