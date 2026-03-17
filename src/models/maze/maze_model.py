@@ -2,10 +2,10 @@ import os
 import numpy as np
 from typing import Union, Generator, Tuple, Optional, TypeAlias, Any
 
-from src.maze.maze_config import MazeConfig
-from src.maze.sqr_generation import SqrGenerator
-from src.maze.hex_generation import HexGenerator
-from src.maze.file_manager import MazeFileManager
+from src.models.maze.maze_config import MazeConfig
+from src.models.maze.generation import MazeGenerator
+from src.models.maze.hex_generation import HexMazeGenerator
+from src.models.maze.file_manager import MazeFileManager
 
 StepList: TypeAlias = list[dict[tuple[int, int], int]]
 StepGenerator: TypeAlias = Generator[
@@ -13,7 +13,7 @@ StepGenerator: TypeAlias = Generator[
 ]
 
 
-class MazeGenerator:
+class MazeModel:
     """
     Main controller for Maze Generation.
     Acts as a bridge between the Algorithm and the Display/File System.
@@ -31,11 +31,11 @@ class MazeGenerator:
 
         # Select Strategy
         if self.config.is_hex:
-            self.generator: Union[SqrGenerator, HexGenerator] = (
-                HexGenerator(self.config)
+            self.generator: Union[MazeGenerator, HexMazeGenerator] = (
+                HexMazeGenerator(self.config)
             )
         else:
-            self.generator = SqrGenerator(self.config)
+            self.generator = MazeGenerator(self.config)
 
         if self.config.is_hex:
 
