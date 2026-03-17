@@ -1,4 +1,4 @@
-from src.models.maze import MazeModel
+from src.maze import MazeGenerator
 from src.scenes import BaseScene
 from src.views.renderers import SquareRenderer, HexRenderer
 from typing import Any, Callable, TypeAlias
@@ -10,7 +10,7 @@ class GameScene(BaseScene):
     def __init__(self, app: Any) -> None:
         super().__init__(app)
 
-        self.model: Any = MazeModel()
+        self.model: Any = MazeGenerator()
         self.view: Any = None
 
         if self.model.config.is_hex is True:

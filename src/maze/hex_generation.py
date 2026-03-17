@@ -1,39 +1,53 @@
+from collections import deque
 from heapq import heappush, heappop
 from random import randint, seed
-from typing import Any, List, Tuple, Optional, Dict, Generator, Set
-from typing import TypeAlias
 import numpy as np
-from collections import deque
-from src.models.maze.maze_config import MazeConfig
-
-StepGenerator: TypeAlias = Generator[
-    Tuple[str, Tuple[int, int], Tuple[int, int]], None, None
-]
+from typing import Any, List, Tuple, Optional, Dict, Generator, Set
+from src.maze.maze_config import MazeConfig
 
 
-class MazeGenerator:
-
-    TOP = 1
+class HexGenerator:
+    TOP_RIGHT = 1
     RIGHT = 2
-    BOTTOM = 4
-    LEFT = 8
-    FULL = 15
+    BOTTOM_RIGHT = 4
+    BOTTOM_LEFT = 8
+    LEFT = 16
+    TOP_LEFT = 32
+    FULL = 63
 
     def __init__(self, config: MazeConfig) -> None:
         self.config = config
 
         self.config.height = config.height
         self.config.width = config.width
-
         self.config.entry = config.entry
         self.config.exit = config.exit
         self.config.perfect = config.perfect
+
+        # format: (dr, dc): (current_mask, neighbor_mask)
+        self._even_neighbors = {
+            (-1, 0): (self.TOP_RIGHT, self.BOTTOM_LEFT),
+            (0, 1): (self.RIGHT, self.LEFT),
+            (1, 0): (self.BOTTOM_RIGHT, self.TOP_LEFT),
+            (1, -1): (self.BOTTOM_LEFT, self.TOP_RIGHT),
+            (0, -1): (self.LEFT, self.RIGHT),
+            (-1, -1): (self.TOP_LEFT, self.BOTTOM_RIGHT),
+        }
+
+        self._odd_neighbors = {
+            (-1, 1): (self.TOP_RIGHT, self.BOTTOM_LEFT),
+            (0, 1): (self.RIGHT, self.LEFT),
+            (1, 1): (self.BOTTOM_RIGHT, self.TOP_LEFT),
+            (1, 0): (self.BOTTOM_LEFT, self.TOP_RIGHT),
+            (0, -1): (self.LEFT, self.RIGHT),
+            (-1, 0): (self.TOP_LEFT, self.BOTTOM_RIGHT),
+        }
 
     def initialize_maze(self) -> None:
         if self.config.seed is not None:
             seed(self.config.seed)
         self.maze = np.full(
-            (self.config.height, self.config.width), 0xF, dtype=np.uint8
+            (self.config.height, self.config.width), 0x3F, dtype=np.uint8
         )
 
     def initialize_visited(self) -> None:
@@ -43,18 +57,21 @@ class MazeGenerator:
 
     def set_logo_as_visited(self) -> None:
         """Mark logo area as visited so the maze generates around it"""
-        with open("src/models/maze/logo.txt", "r") as f:
-            logo = f.read()
+        try:
+            with open("src/maze/logo.txt", "r") as f:
+                logo_rows = [line for line in f.read().splitlines()
+                             if line.strip()]
+        except FileNotFoundError:
+            return
 
-        logo_rows = list(logo.strip().split("\n"))
         if not logo_rows:
             return
 
         center_row = (self.visited.shape[0] - len(logo_rows)) // 2
         center_col = (self.visited.shape[1] - len(logo_rows[0])) // 2
 
-        for row in range(0, len(logo_rows)):
-            for col in range(0, len(logo_rows[0])):
+        for row in range(len(logo_rows)):
+            for col in range(len(logo_rows[0])):
                 if logo_rows[row][col] == "1":
                     self.visited[row + center_row, col + center_col] = True
 
@@ -62,21 +79,16 @@ class MazeGenerator:
         self, cell: Tuple[int, int]
     ) -> List[Tuple[int, int]]:
         """Return list of valid unvisited neighbors"""
-        row, col = cell
+        r, c = cell
         neighbors = []
 
-        # Up
-        if row > 0 and not self.visited[row - 1, col]:
-            neighbors.append((row - 1, col))
-        # Down
-        if row < self.config.height - 1 and not self.visited[row + 1, col]:
-            neighbors.append((row + 1, col))
-        # Left
-        if col > 0 and not self.visited[row, col - 1]:
-            neighbors.append((row, col - 1))
-        # Right
-        if col < self.config.width - 1 and not self.visited[row, col + 1]:
-            neighbors.append((row, col + 1))
+        offsets = self._even_neighbors if r % 2 == 0 else self._odd_neighbors
+
+        for dr, dc in offsets.keys():
+            nr, nc = r + dr, c + dc
+            if 0 <= nr < self.config.height and 0 <= nc < self.config.width:
+                if not self.visited[nr, nc]:
+                    neighbors.append((nr, nc))
 
         return neighbors
 
@@ -86,19 +98,14 @@ class MazeGenerator:
         """Remove walls between two adjacent cells"""
         cr, cc = current
         nr, nc = next_cell
+        dr, dc = nr - cr, nc - cc
 
-        if nr < cr:
-            self.maze[current] &= 0xFF & ~self.TOP
-            self.maze[next_cell] &= 0xFF & ~self.BOTTOM
-        elif nr > cr:
-            self.maze[current] &= 0xFF & ~self.BOTTOM
-            self.maze[next_cell] &= 0xFF & ~self.TOP
-        elif nc < cc:
-            self.maze[current] &= 0xFF & ~self.LEFT
-            self.maze[next_cell] &= 0xFF & ~self.RIGHT
-        elif nc > cc:
-            self.maze[current] &= 0xFF & ~self.RIGHT
-            self.maze[next_cell] &= 0xFF & ~self.LEFT
+        offsets = self._even_neighbors if cr % 2 == 0 else self._odd_neighbors
+
+        if (dr, dc) in offsets:
+            curr_mask, next_mask = offsets[(dr, dc)]
+            self.maze[current] &= 0xFF & ~curr_mask
+            self.maze[next_cell] &= 0xFF & ~next_mask
 
     def generate_steps(self) -> Generator[Any, None, None]:
         self.initialize_maze()
@@ -123,12 +130,12 @@ class MazeGenerator:
 
                 self.visited[next_cell] = True
                 self.remove_wall(curr_cell, next_cell)
-
                 stack.append(next_cell)
 
                 yield self.maze, ("remove", curr_cell, next_cell)
 
     def generate(self) -> np.ndarray[Any, Any]:
+        """Blocking generation (consumes the steps generator)"""
         for _ in self.generate_steps():
             pass
         return self.maze
@@ -138,60 +145,50 @@ class MazeGenerator:
     ) -> int:
         """Count how many walls a specific cell has"""
         cell_val = maze[row, col]
-        count = 0
-        if cell_val & self.TOP:
-            count += 1
-        if cell_val & self.RIGHT:
-            count += 1
-        if cell_val & self.BOTTOM:
-            count += 1
-        if cell_val & self.LEFT:
-            count += 1
-        return count
+        # Count set bits efficiently
+        return bin(cell_val & self.FULL).count("1")
 
     def close_deadend(
-        self, maze: np.ndarray[Any, Any], row: int, col: int
-    ) -> Generator[Tuple[np.ndarray[Any, Any], Tuple[int, int]], None, None]:
-        """Fill a deadend by adding a wall to the only open side"""
-        next_cell = (row, col)
+        self,
+        maze: np.ndarray[Any, Any],
+        row: int,
+        col: int,
+    ) -> Generator[Any, None, None]:
+        next_cell: Tuple[int, int] = (row, col)
+
         while (
             next_cell != self.config.entry
             and next_cell != self.config.exit
-            and self.count_walls(next_cell[0], next_cell[1], maze) == 3
+            and self.count_walls(next_cell[0], next_cell[1], maze) == 5
         ):
             row, col = next_cell
-            cell_val = maze[row, col]
+            cell_val = int(maze[row, col])
 
-            if not (cell_val & self.TOP):
-                maze[row, col] |= self.TOP
-                if row > 0:
-                    maze[row - 1, col] |= self.BOTTOM
-                    next_cell = (row - 1, col)
+            # Find the single open direction to backtrack
+            offsets = (
+                self._even_neighbors if row % 2 == 0 else self._odd_neighbors
+            )
+            found_open = False
 
-            elif not (cell_val & self.RIGHT):
-                maze[row, col] |= self.RIGHT
-                if col < self.config.width - 1:
-                    maze[row, col + 1] |= self.LEFT
-                    next_cell = (row, col + 1)
+            for (dr, dc), (mask, neighbor_mask) in offsets.items():
+                if (cell_val & mask) == 0:
+                    nr, nc = row + dr, col + dc
+                    if 0 <= nr < self.config.height and (
+                        0 <= nc < self.config.width
+                    ):
+                        maze[row, col] |= mask
+                        maze[nr, nc] |= neighbor_mask
+                        next_cell = (nr, nc)
+                        found_open = True
+                        yield maze, (row, col)
+                        break
 
-            elif not (cell_val & self.BOTTOM):
-                maze[row, col] |= self.BOTTOM
-                if row < self.config.height - 1:
-                    maze[row + 1, col] |= self.TOP
-                    next_cell = (row + 1, col)
+            if not found_open:
+                break
 
-            elif not (cell_val & self.LEFT):
-                maze[row, col] |= self.LEFT
-                if col > 0:
-                    maze[row, col - 1] |= self.RIGHT
-                    next_cell = (row, col - 1)
-            yield maze, (row, col)
-
-    def solve_deadends_steps(
-        self,
-    ) -> Generator[Tuple[np.ndarray[Any, Any], Tuple[int, int]], None, None]:
+    def solve_deadends_steps(self) -> Generator[Any, None, None]:
         """
-        Removes dead ends to find the solution.
+        Yields map state while removing dead ends.
         """
         maze = self.maze.copy()
 
@@ -201,37 +198,34 @@ class MazeGenerator:
             found_deadend = False
             for row in range(self.config.height):
                 for col in range(self.config.width):
-
                     if (
                         (row, col) != self.config.entry
                         and (row, col) != self.config.exit
-                        and self.count_walls(row, col, maze) == 3
+                        and self.count_walls(row, col, maze) == 5
                     ):
                         for maze, cell in self.close_deadend(maze, row, col):
                             yield maze, cell
                         found_deadend = True
-
                         yield maze, (row, col)
 
             if not found_deadend:
                 break
 
     def solve_deadends(self) -> np.ndarray[Any, Any]:
-        """
-        Removes dead ends to find the solution.
-        """
+        """Blocking version that consumes the steps generator"""
         last_maze = self.maze.copy()
         for maze_state, _ in self.solve_deadends_steps():
             last_maze = maze_state
         return last_maze
 
     def add_paths_steps(
-        self, solved: np.ndarray[Any, Any], solution_str_len: int
+        self,
+        solved: np.ndarray[Any, Any],
+        solution_str_len: int,
     ) -> Generator[Any, None, None]:
+
         row, col = self.config.entry
-
         solve_size = max(0, solution_str_len)
-
         added_path = False
         number_path = 0
         step = 0
@@ -239,23 +233,28 @@ class MazeGenerator:
         prev: Optional[Tuple[int, int]] = None
 
         while (row, col) != self.config.exit:
-            value: bool = randint(0, 4) == 0
-            curr = (row, col)
+            value: bool = randint(0, 3) == 0
 
-            if not (solved[row, col] & self.TOP) and (row - 1, col) != prev:
-                next_pos = (row - 1, col)
-            elif (
-                not (solved[row, col] & self.RIGHT) and (row, col + 1) != prev
-            ):
-                next_pos = (row, col + 1)
-            elif (
-                not (solved[row, col] & self.BOTTOM) and (row + 1, col) != prev
-            ):
-                next_pos = (row + 1, col)
-            elif not (solved[row, col] & self.LEFT) and (row, col - 1) != prev:
-                next_pos = (row, col - 1)
+            offsets = (
+                self._even_neighbors if row % 2 == 0 else self._odd_neighbors
+            )
+            next_pos = (row, col)
 
-            prev = curr
+            current_solved_val = int(solved[row, col])
+
+            # Find next step in solved path
+            for (dr, dc), (mask, _) in offsets.items():
+                nr, nc = row + dr, col + dc
+                if (current_solved_val & mask) == 0:
+                    if (
+                        0 <= nr < self.config.height
+                        and 0 <= nc < self.config.width
+                    ):
+                        if (nr, nc) != prev:
+                            next_pos = (nr, nc)
+                            break
+
+            prev = (row, col)
             row, col = next_pos
             step += 1
 
@@ -275,8 +274,11 @@ class MazeGenerator:
                 added_path = False
 
     def add_paths(
-        self, solved: np.ndarray[Any, Any], solution_str_len: int
+        self,
+        solved: np.ndarray[Any, Any],
+        solution_str_len: int,
     ) -> np.ndarray[Any, Any]:
+        """Blocking version that consumes the steps generator"""
         for _ in self.add_paths_steps(solved, solution_str_len):
             pass
         return self.maze
@@ -287,48 +289,49 @@ class MazeGenerator:
         cell: Tuple[int, int],
     ) -> Optional[Tuple[int, int]]:
         row, col = cell
-
-        def ok(r: int, c: int) -> bool:
-            return (
-                0 <= r < self.config.height
-                and 0 <= c < self.config.width
-                and self.maze[r, c] != self.FULL
-            )
-
         candidates: List[Tuple[int, int]] = []
-        if (solved[row, col] & self.TOP) and ok(row - 1, col):
-            candidates.append((row - 1, col))
 
-        if (solved[row, col] & self.RIGHT) and ok(row, col + 1):
-            candidates.append((row, col + 1))
+        offsets = self._even_neighbors if row % 2 == 0 else self._odd_neighbors
 
-        if (solved[row, col] & self.BOTTOM) and ok(row + 1, col):
-            candidates.append((row + 1, col))
+        cell_val = int(solved[row, col])
 
-        if (solved[row, col] & self.LEFT) and ok(row, col - 1):
-            candidates.append((row, col - 1))
+        for (dr, dc), (mask, _) in offsets.items():
+            # If there IS a wall in the solved maze (deadend or boundary),
+            # maybe we can open it to creating a loop?
+            if (cell_val & mask) != 0:
+                nr, nc = row + dr, col + dc
+                if 0 <= nr < self.config.height and (
+                    0 <= nc < self.config.width
+                ):
+                    if self.maze[nr, nc] != self.FULL:
+                        candidates.append((nr, nc))
 
         if not candidates:
             return None
 
         return candidates[randint(0, len(candidates) - 1)]
 
-    def get_neighbors_open(self, cell: Tuple[int, int]) -> list[Any]:
+    def get_neighbors_open(
+        self,
+        cell: Tuple[int, int],
+    ) -> List[Tuple[int, int]]:
         r, c = cell
         neighbors: List[Tuple[int, int]] = []
 
-        if (self.maze[r, c] & self.TOP) == 0 and r > 0:
-            neighbors.append((r - 1, c))
-        if (self.maze[r, c] & self.RIGHT) == 0 and c < self.config.width - 1:
-            neighbors.append((r, c + 1))
-        if (self.maze[r, c] & self.BOTTOM) == 0 and r < self.config.height - 1:
-            neighbors.append((r + 1, c))
-        if (self.maze[r, c] & self.LEFT) == 0 and c > 0:
-            neighbors.append((r, c - 1))
+        offsets = self._even_neighbors if r % 2 == 0 else self._odd_neighbors
+        cell_val = int(self.maze[r, c])
+
+        for (dr, dc), (mask, _) in offsets.items():
+            if (cell_val & mask) == 0:
+                nr, nc = r + dr, c + dc
+                if 0 <= nr < self.config.height and (
+                    0 <= nc < self.config.width
+                ):
+                    neighbors.append((nr, nc))
 
         return neighbors
 
-    def bfs(self, max_paths: int = 999) -> StepGenerator:
+    def bfs(self, max_paths: int = 999) -> Generator[Any, None, None]:
         self.initialize_visited()
         self.set_logo_as_visited()
         self.bfs_paths = []
@@ -353,19 +356,23 @@ class MazeGenerator:
                     q.append((nxt, path + [nxt]))
 
     def get_neighbors_open_opti(
-        self, cell: Tuple[int, int], maze: np.ndarray[Any, Any]
-    ) -> list[Any]:
+        self,
+        cell: Tuple[int, int],
+        maze: np.ndarray[Any, Any],
+    ) -> List[Tuple[int, int]]:
         r, c = cell
         neighbors: List[Tuple[int, int]] = []
 
-        if (maze[r, c] & self.TOP) == 0 and r > 0:
-            neighbors.append((r - 1, c))
-        if (maze[r, c] & self.RIGHT) == 0 and c < self.config.width - 1:
-            neighbors.append((r, c + 1))
-        if (maze[r, c] & self.BOTTOM) == 0 and r < self.config.height - 1:
-            neighbors.append((r + 1, c))
-        if (maze[r, c] & self.LEFT) == 0 and c > 0:
-            neighbors.append((r, c - 1))
+        offsets = self._even_neighbors if r % 2 == 0 else self._odd_neighbors
+        cell_val = int(maze[r, c])
+
+        for (dr, dc), (mask, _) in offsets.items():
+            if (cell_val & mask) == 0:
+                nr, nc = r + dr, c + dc
+                if 0 <= nr < self.config.height and (
+                    0 <= nc < self.config.width
+                ):
+                    neighbors.append((nr, nc))
         return neighbors
 
     def _heuristic(self, cell: Tuple[int, int]) -> int:
@@ -374,7 +381,7 @@ class MazeGenerator:
             cell[1] - self.config.exit[1]
         )
 
-    def bfs_opti(self) -> StepGenerator:
+    def bfs_opti(self) -> Generator[Any, None, None]:
         self.initialize_visited()
         self.set_logo_as_visited()
         self.bfs_paths = []
@@ -391,9 +398,7 @@ class MazeGenerator:
         exit_ = self.config.exit
         start = self.config.entry
 
-        open_heap: List[
-            Tuple[int, int, Tuple[int, int], Optional[Tuple[int, int]]]
-        ] = []
+        open_heap: List[Any] = []
         heappush(open_heap, (self._heuristic(start), 0, start, None))
 
         g_best: Dict[Tuple[int, int], int] = {start: 0}
