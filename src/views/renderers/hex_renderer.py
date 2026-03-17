@@ -15,19 +15,29 @@ class HexRenderer(BaseRenderer):
         self.compute_scales()
         self.prev_gen: CoordTuple | None = None
 
-        self.add_layer("path", self.offset_x, self.offset_y,
-                       1, self.maze_w, self.maze_h)
-        self.add_layer("maze", self.offset_x, self.offset_y,
-                       2, self.maze_w, self.maze_h)
-        self.add_layer("endpoints", self.offset_x, self.offset_y,
-                       3, self.maze_w, self.maze_h)
+        self.add_layer(
+            "path", self.offset_x, self.offset_y, 1, self.maze_w, self.maze_h
+        )
+        self.add_layer(
+            "maze", self.offset_x, self.offset_y, 2, self.maze_w, self.maze_h
+        )
+        self.add_layer(
+            "endpoints",
+            self.offset_x,
+            self.offset_y,
+            3,
+            self.maze_w,
+            self.maze_h,
+        )
 
     def compute_scales(self) -> None:
         """Calculate required sizes for maze display"""
-        available_w: int = (self.app.window_width - self.pad_w * 2
-                            - self.wall_size)
-        available_h: int = (self.app.window_height - self.pad_h * 2
-                            - self.wall_size)
+        available_w: int = (
+            self.app.window_width - self.pad_w * 2 - self.wall_size
+        )
+        available_h: int = (
+            self.app.window_height - self.pad_h * 2 - self.wall_size
+        )
         cols: int = self.model.config.width
         rows: int = self.model.config.height
         s_x: float = available_w / (math.sqrt(3) * (cols + 0.5))
@@ -40,10 +50,13 @@ class HexRenderer(BaseRenderer):
 
         self.hex_w: float = math.sqrt(3) * self.cell_size
         self.hex_h: int = 2 * self.cell_size
-        self.maze_w: int = (int(cols * self.hex_w + self.hex_w / 2)
-                            + self.wall_size * 2)
-        self.maze_h: int = (int(rows * 1.5 * self.cell_size
-                                + 0.5 * self.cell_size) + self.wall_size * 2)
+        self.maze_w: int = (
+            int(cols * self.hex_w + self.hex_w / 2) + self.wall_size * 2
+        )
+        self.maze_h: int = (
+            int(rows * 1.5 * self.cell_size + 0.5 * self.cell_size)
+            + self.wall_size * 2
+        )
         self.offset_x: int = (self.app.window_width - self.maze_w) // 2
         self.offset_y: int = (self.app.window_height - self.maze_h) // 2
 
@@ -92,21 +105,23 @@ class HexRenderer(BaseRenderer):
             return
 
         match cmd:
-            case 'remove':
+            case "remove":
                 maze_canvas: Any = self.layers.get("maze")
                 if self.prev_gen:
                     self.draw_cell_center(maze_canvas, *self.prev_gen)
                 self.draw_cell_center(maze_canvas, x1, y1)
                 self.draw_cell_center(maze_canvas, x2, y2, step_color)
                 self.draw_cell_walls(maze_canvas, x1, y1, wall)
-            case 'fill':
+            case "fill":
                 path_canvas: Any = self.layers.get("path")
-                self.draw_cell_center(path_canvas, x1, y1,
-                                      step_color & 0x7FFFFFFF)
+                self.draw_cell_center(
+                    path_canvas, x1, y1, step_color & 0x7FFFFFFF
+                )
                 self.draw_cell_center(path_canvas, x2, y2, step_color)
-                self.draw_cell_walls(path_canvas, x1, y1, wall,
-                                     step_color & 0x7FFFFFFF)
-            case 'path_found':
+                self.draw_cell_walls(
+                    path_canvas, x1, y1, wall, step_color & 0x7FFFFFFF
+                )
+            case "path_found":
                 pass
             case _:
                 pass
@@ -117,17 +132,25 @@ class HexRenderer(BaseRenderer):
         """Draw entry and exit to endpoints layer"""
         canvas: Any = self.layers.get("endpoints")
         self.draw_cell_center(
-            canvas, self.model.config.entry[1], self.model.config.entry[0],
-            self.app.colors.get("entry")
+            canvas,
+            self.model.config.entry[1],
+            self.model.config.entry[0],
+            self.app.colors.get("entry"),
         )
         self.draw_cell_center(
-            canvas, self.model.config.exit[1], self.model.config.exit[0],
-            self.app.colors.get("exit")
+            canvas,
+            self.model.config.exit[1],
+            self.model.config.exit[0],
+            self.app.colors.get("exit"),
         )
 
     def get_center(self, x: int, y: int) -> CoordTuple:
-        cx: float = (x * self.hex_w + (self.hex_w / 2 if y % 2 == 1 else 0)
-                     + self.hex_w / 2 + self.wall_size)
+        cx: float = (
+            x * self.hex_w
+            + (self.hex_w / 2 if y % 2 == 1 else 0)
+            + self.hex_w / 2
+            + self.wall_size
+        )
         cy: float = y * 1.5 * self.cell_size + self.cell_size + self.wall_size
         return round(cx), round(cy)
 
@@ -143,7 +166,7 @@ class HexRenderer(BaseRenderer):
                 (1, 1): 4,
                 (1, 0): 8,
                 (0, -1): 16,
-                (-1, 0): 32
+                (-1, 0): 32,
             }.get((dy, dx), 0)
         else:
             return {
@@ -152,11 +175,12 @@ class HexRenderer(BaseRenderer):
                 (1, 0): 4,
                 (1, -1): 8,
                 (0, -1): 16,
-                (-1, -1): 32
+                (-1, -1): 32,
             }.get((dy, dx), 0)
 
-    def draw_cell_center(self, canvas: Canvas, x: int, y: int,
-                         color: int = 0xFF000000) -> None:
+    def draw_cell_center(
+        self, canvas: Canvas, x: int, y: int, color: int = 0xFF000000
+    ) -> None:
         """Draw square center of cell to canvas"""
         cx, cy = self.get_center(x, y)
         s: int = self.cell_size - self.wall_size // 2
@@ -164,19 +188,25 @@ class HexRenderer(BaseRenderer):
             return
 
         for i in range(int(-s), int(s) + 1):
-            if i < -s / 2:   # Top Triangle
+            if i < -s / 2:  # Top Triangle
                 half_w = (i + s) / (s / 2) * (math.sqrt(3) * s / 2)
             elif i > s / 2:  # Bottom Triangle
                 half_w = (s - i) / (s / 2) * (math.sqrt(3) * s / 2)
-            else:            # Middle Rectangle
+            else:  # Middle Rectangle
                 half_w = math.sqrt(3) * s / 2
 
             canvas.fill_rect(
                 round(cx - half_w), round(cy + i), round(half_w * 2), 1, color
             )
 
-    def draw_cell_walls(self, canvas: Canvas, x: int, y: int,
-                        value: int = 0, color: int = 0xFF000000) -> None:
+    def draw_cell_walls(
+        self,
+        canvas: Canvas,
+        x: int,
+        y: int,
+        value: int = 0,
+        color: int = 0xFF000000,
+    ) -> None:
         """Draw walls of cell to canvas"""
         cx, cy = self.get_center(x, y)
         s: int = self.cell_size
@@ -184,24 +214,25 @@ class HexRenderer(BaseRenderer):
         s_half: int = round(s / 2)
 
         v: list[CoordTuple] = [
-            (cx, cy - s),           # 0: Top
+            (cx, cy - s),  # 0: Top
             (cx + w, cy - s_half),  # 1: Top-Right
             (cx + w, cy + s_half),  # 2: Bottom-Right
-            (cx, cy + s),           # 3: Bottom
+            (cx, cy + s),  # 3: Bottom
             (cx - w, cy + s_half),  # 4: Bottom-Left
-            (cx - w, cy - s_half)   # 5: Top-Left
+            (cx - w, cy - s_half),  # 5: Top-Left
         ]
 
         walls: list[tuple[CoordTuple, CoordTuple, int]] = [
-            (v[0], v[1], 1),    # TR
-            (v[1], v[2], 2),    # R
-            (v[2], v[3], 4),    # BR
-            (v[3], v[4], 8),    # BL
-            (v[4], v[5], 16),   # L
-            (v[5], v[0], 32)    # TL
+            (v[0], v[1], 1),  # TR
+            (v[1], v[2], 2),  # R
+            (v[2], v[3], 4),  # BR
+            (v[3], v[4], 8),  # BL
+            (v[4], v[5], 16),  # L
+            (v[5], v[0], 32),  # TL
         ]
 
-        for (p1, p2, mask) in walls:
+        for p1, p2, mask in walls:
             if value & mask:
-                canvas.draw_line(p1[0], p1[1], p2[0], p2[1],
-                                 color, self.wall_size + 1)
+                canvas.draw_line(
+                    p1[0], p1[1], p2[0], p2[1], color, self.wall_size + 1
+                )

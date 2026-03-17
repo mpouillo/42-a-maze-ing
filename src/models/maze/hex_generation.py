@@ -1,3 +1,5 @@
+"""Hex-grid maze generation and solving algorithms."""
+
 from collections import deque
 from heapq import heappush, heappop
 from random import randint, seed
@@ -8,6 +10,8 @@ from .maze_config import MazeConfig
 
 
 class HexGenerator:
+    """Generation/solving strategy for hexagonal (6-neighbor) mazes."""
+
     TOP_RIGHT = 1
     RIGHT = 2
     BOTTOM_RIGHT = 4
@@ -17,6 +21,7 @@ class HexGenerator:
     FULL = 63
 
     def __init__(self, config: MazeConfig) -> None:
+        """Bind this generator to a validated config/precompute neighbors."""
         self.config = config
 
         self.config.height = config.height
@@ -45,6 +50,7 @@ class HexGenerator:
         }
 
     def initialize_maze(self) -> None:
+        """Initialize a fresh maze grid (all walls closed)."""
         if self.config.seed is not None:
             seed(self.config.seed)
         self.maze = np.full(
@@ -52,6 +58,7 @@ class HexGenerator:
         )
 
     def initialize_visited(self) -> None:
+        """Initialize the visited grid used by generation/solving."""
         self.visited = np.zeros(
             (self.config.height, self.config.width), dtype=bool
         )
@@ -65,8 +72,9 @@ class HexGenerator:
             if not os.path.exists(logo_path):
                 return
             with open(logo_path, "r") as f:
-                logo_rows = [line for line in f.read().splitlines()
-                             if line.strip()]
+                logo_rows = [
+                    line for line in f.read().splitlines() if line.strip()
+                ]
         except FileNotFoundError:
             return
 
@@ -114,6 +122,7 @@ class HexGenerator:
             self.maze[next_cell] &= 0xFF & ~next_mask
 
     def generate_steps(self) -> Generator[Any, None, None]:
+        """randomized DFS generation on a hex grid."""
         self.initialize_maze()
         self.initialize_visited()
         self.set_logo_as_visited()
@@ -151,7 +160,6 @@ class HexGenerator:
     ) -> int:
         """Count how many walls a specific cell has"""
         cell_val = maze[row, col]
-        # Count set bits efficiently
         return bin(cell_val & self.FULL).count("1")
 
     def close_deadend(
@@ -170,7 +178,6 @@ class HexGenerator:
             row, col = next_cell
             cell_val = int(maze[row, col])
 
-            # Find the single open direction to backtrack
             offsets = (
                 self._even_neighbors if row % 2 == 0 else self._odd_neighbors
             )
@@ -218,7 +225,7 @@ class HexGenerator:
                 break
 
     def solve_deadends(self) -> np.ndarray[Any, Any]:
-        """Blocking version that consumes the steps generator"""
+        """that consumes the steps generator to add deadend"""
         last_maze = self.maze.copy()
         for maze_state, _ in self.solve_deadends_steps():
             last_maze = maze_state
@@ -248,7 +255,6 @@ class HexGenerator:
 
             current_solved_val = int(solved[row, col])
 
-            # Find next step in solved path
             for (dr, dc), (mask, _) in offsets.items():
                 nr, nc = row + dr, col + dc
                 if (current_solved_val & mask) == 0:
@@ -284,7 +290,7 @@ class HexGenerator:
         solved: np.ndarray[Any, Any],
         solution_str_len: int,
     ) -> np.ndarray[Any, Any]:
-        """Blocking version that consumes the steps generator"""
+        """consumes the steps generator to add path"""
         for _ in self.add_paths_steps(solved, solution_str_len):
             pass
         return self.maze
@@ -302,8 +308,7 @@ class HexGenerator:
         cell_val = int(solved[row, col])
 
         for (dr, dc), (mask, _) in offsets.items():
-            # If there IS a wall in the solved maze (deadend or boundary),
-            # maybe we can open it to creating a loop?
+
             if (cell_val & mask) != 0:
                 nr, nc = row + dr, col + dc
                 if 0 <= nr < self.config.height and (

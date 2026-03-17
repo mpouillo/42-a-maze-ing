@@ -23,25 +23,26 @@ class BaseRenderer:
             "btn_bg": 0xFF333333,
             "btn_text": 0xFFFFFFFF,
             "btn_border": 0xFF555555,
-            "btn_hover": 0xff94167f,
+            "btn_hover": 0xFF94167F,
             "btn_disabled": 0xFF404040,
             "btn_text": 0xFFFFFFFF,
             "btn_text_disabled": 0xFF7F7F7F,
             "border_weight": 4,
-            "font_scale": 3
+            "font_scale": 3,
         }
 
-        self.add_layer("bg", 0, 0, 0, self.app.window_width,
-                       self.app.window_height)
-        self.add_layer("ui", 0, 0, 10, self.app.window_width,
-                       self.app.window_height)
-        self.add_layer("popup", 0, 0, 99, self.app.window_width,
-                       self.app.window_height)
+        self.add_layer(
+            "bg", 0, 0, 0, self.app.window_width, self.app.window_height
+        )
+        self.add_layer(
+            "ui", 0, 0, 10, self.app.window_width, self.app.window_height
+        )
+        self.add_layer(
+            "popup", 0, 0, 99, self.app.window_width, self.app.window_height
+        )
 
         self.fonts_dir: str = "src/fonts"
-        self.fonts_dict: FontsDict = self.parse_fonts(
-            self.fonts_dir
-        )
+        self.fonts_dict: FontsDict = self.parse_fonts(self.fonts_dir)
         self.font_scale: int = 3
         try:
             a_data: list[list[int]] | None = self.fonts_dict.get("a")
@@ -73,13 +74,15 @@ class BaseRenderer:
 
         return fonts_dict
 
-    def create_canvas(self, x: int, y: int, z: int,
-                      width: int, height: int) -> Canvas:
+    def create_canvas(
+        self, x: int, y: int, z: int, width: int, height: int
+    ) -> Canvas:
         """Create and return a canvas"""
         return Canvas(self.app, x, y, z, width, height)
 
-    def add_layer(self, name: str, x: int, y: int, z: int,
-                  width: int, height: int) -> Canvas:
+    def add_layer(
+        self, name: str, x: int, y: int, z: int, width: int, height: int
+    ) -> Canvas:
         """Create a canvas and add it to self.layers dict"""
         canvas = self.create_canvas(x, y, z, width, height)
         self.layers.update({name: canvas})
@@ -113,8 +116,9 @@ class BaseRenderer:
         for name in to_delete:
             self.layers.pop(name)
 
-    def get_gradient_color(self, color_1: int, color_2: int,
-                           mix: float) -> int:
+    def get_gradient_color(
+        self, color_1: int, color_2: int, mix: float
+    ) -> int:
         """Return a mix between two colors"""
         alpha_1: int = (color_1 >> 24) & 0xFF
         red_1: int = (color_1 >> 16) & 0xFF
@@ -133,9 +137,17 @@ class BaseRenderer:
 
         return (alpha << 24) | (red << 16) | (green << 8) | blue
 
-    def add_button(self, name: str, label: str, x: int, y: int,
-                   z: int, width: int, height: int,
-                   action: Callable[[], None]) -> None:
+    def add_button(
+        self,
+        name: str,
+        label: str,
+        x: int,
+        y: int,
+        z: int,
+        width: int,
+        height: int,
+        action: Callable[[], None],
+    ) -> None:
         """Create and add a button to self.buttons"""
         button: Button = Button(label, x, y, z, width, height, action)
         self.buttons.update({name: button})
@@ -155,26 +167,34 @@ class BaseRenderer:
         bw: int = theme.get("border_weight", 1)
 
         bg_color: int = (
-            theme.get("btn_disabled", 0xFF404040) if not btn.enabled
-            else theme.get("btn_hover", 0xFF7F7F7F) if btn.hover
-            else theme.get("btn_bg", 0xFF333333)
+            theme.get("btn_disabled", 0xFF404040)
+            if not btn.enabled
+            else (
+                theme.get("btn_hover", 0xFF7F7F7F)
+                if btn.hover
+                else theme.get("btn_bg", 0xFF333333)
+            )
         )
 
         text_color: int = (
-            theme.get("btn_text_disabled", 0xFF404040) if not btn.enabled
+            theme.get("btn_text_disabled", 0xFF404040)
+            if not btn.enabled
             else theme.get("btn_text", 0xFFFFFFFF)
         )
 
         canvas.fill_rect(
-            btn.x - bw, btn.y - bw, btn.width + bw * 2, btn.height + bw * 2,
-            theme.get("btn_border", 0xFF555555)
+            btn.x - bw,
+            btn.y - bw,
+            btn.width + bw * 2,
+            btn.height + bw * 2,
+            theme.get("btn_border", 0xFF555555),
         )
         canvas.fill_rect(btn.x, btn.y, btn.width, btn.height, bg_color)
 
         if len(btn.label) == 0:
             return
 
-        base_text_w: int = (len(btn.label) * (self.font_width + 1) - 1)
+        base_text_w: int = len(btn.label) * (self.font_width + 1) - 1
         max_scale: int = btn.width // base_text_w
         theme_scale: int = theme.get("font_scale", 1)
         font_scale: int = max(1, min(max_scale, theme_scale))
@@ -195,12 +215,20 @@ class BaseRenderer:
         for button in self.buttons.values():
             self.draw_button(canvas, button)
 
-    def draw_text(self, canvas: Canvas, start_x: int, start_y: int,
-                  text: str, color: int, scale: int | None = None) -> None:
+    def draw_text(
+        self,
+        canvas: Canvas,
+        start_x: int,
+        start_y: int,
+        text: str,
+        color: int,
+        scale: int | None = None,
+    ) -> None:
         """Draw text to a canvas"""
         char_offset: int = 0
-        font_scale: int = (scale if scale is not None
-                           else self.ui_style.get("font_scale", 1))
+        font_scale: int = (
+            scale if scale is not None else self.ui_style.get("font_scale", 1)
+        )
 
         for character in text.lower():
             char_data = self.fonts_dict.get(character)
@@ -213,8 +241,11 @@ class BaseRenderer:
                     x *= font_scale
                     if value == 1:
                         canvas.fill_rect(
-                            start_x + x + char_offset, start_y + y,
-                            font_scale, font_scale, color
+                            start_x + x + char_offset,
+                            start_y + y,
+                            font_scale,
+                            font_scale,
+                            color,
                         )
             char_offset += (self.font_width + 1) * font_scale
 
@@ -222,7 +253,8 @@ class BaseRenderer:
         """Refresh layers im z_index order"""
         self.app.mlx.mlx_clear_window(self.app.mlx_ptr, self.app.win_ptr)
         for layer in sorted(
-            self.layers.values(), key=lambda layer: layer.z,
+            self.layers.values(),
+            key=lambda layer: layer.z,
         ):
             self.app.mlx.mlx_put_image_to_window(
                 self.app.mlx_ptr, self.app.win_ptr, layer.ptr, layer.x, layer.y

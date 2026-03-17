@@ -1,7 +1,5 @@
 from .maze import MazeGenerator
 
-__all__ = [
-    "MazeGenerator"
-]
+__all__ = ["MazeGenerator"]
 
 __author__ = "acampion"

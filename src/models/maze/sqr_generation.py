@@ -1,3 +1,5 @@
+"""Square-grid maze generation and solving algorithms."""
+
 from heapq import heappush, heappop
 from random import randint, seed
 from typing import Any, List, Tuple, Optional, Dict, Generator, Set
@@ -13,6 +15,7 @@ StepGenerator: TypeAlias = Generator[
 
 
 class SqrGenerator:
+    """Generation/solving strategy for rectangular (4-neighbor) mazes."""
 
     TOP = 1
     RIGHT = 2
@@ -21,6 +24,7 @@ class SqrGenerator:
     FULL = 15
 
     def __init__(self, config: MazeConfig) -> None:
+        """Bind this generator to a validated config."""
         self.config = config
 
         self.config.height = config.height
@@ -31,6 +35,7 @@ class SqrGenerator:
         self.config.perfect = config.perfect
 
     def initialize_maze(self) -> None:
+        """Initialize a fresh maze grid (all walls closed)."""
         if self.config.seed is not None:
             seed(self.config.seed)
         self.maze = np.full(
@@ -38,6 +43,7 @@ class SqrGenerator:
         )
 
     def initialize_visited(self) -> None:
+        """Initialize the visited grid used by generation/solving."""
         self.visited = np.zeros(
             (self.config.height, self.config.width), dtype=bool
         )
@@ -48,7 +54,7 @@ class SqrGenerator:
         logo_path = os.path.join(current_dir, "logo.txt")
 
         if not os.path.exists(logo_path):
-                return
+            return
         with open(logo_path, "r") as f:
             logo = f.read()
 
@@ -107,6 +113,7 @@ class SqrGenerator:
             self.maze[next_cell] &= 0xFF & ~self.LEFT
 
     def generate_steps(self) -> Generator[Any, None, None]:
+        """Step-wise randomized DFS generation."""
         self.initialize_maze()
         self.initialize_visited()
         self.set_logo_as_visited()

@@ -10,6 +10,7 @@ class BaseScene:
     def _cmd_open_menu(self) -> None:
         """Change current scene to menu scene"""
         from src.scenes import MenuScene
+
         self.app.current_scene = MenuScene(self.app)
 
     def update(self) -> None:

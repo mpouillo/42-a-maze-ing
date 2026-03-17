@@ -23,8 +23,14 @@ class GameScene(BaseScene):
         self.help: bool = False
 
         self.setup_ui()
-        self.view.add_layer("char", self.view.offset_x, self.view.offset_y,
-                            4, self.view.maze_w, self.view.maze_h)
+        self.view.add_layer(
+            "char",
+            self.view.offset_x,
+            self.view.offset_y,
+            4,
+            self.view.maze_w,
+            self.view.maze_h,
+        )
         self.model.generate_new_maze()
         self.view.draw_maze()
         self.view.draw_endpoints()
@@ -35,30 +41,39 @@ class GameScene(BaseScene):
 
         btn_data: BtnData = [
             ("reset", "Reset", self.reset_game),
-            ("help", "Help OFF", self.toggle_help)
+            ("help", "Help OFF", self.toggle_help),
         ]
 
-        btn_width: int = min(self.view.ui_style.get("btn_width", 0),
-                             round(self.app.window_width
-                                   // len(btn_data) * 0.8)
-                             )
+        btn_width: int = min(
+            self.view.ui_style.get("btn_width", 0),
+            round(self.app.window_width // len(btn_data) * 0.8),
+        )
         btn_height: int = self.view.ui_style.get("btn_height", 0)
-        btn_spacing: int = ((self.app.window_width
-                             - (len(btn_data) * btn_width))
-                            // (len(btn_data) + 1))
+        btn_spacing: int = (
+            self.app.window_width - (len(btn_data) * btn_width)
+        ) // (len(btn_data) + 1)
 
         for i, b in enumerate(btn_data):
             self.view.add_button(
-                b[0], b[1], (i + 1) * btn_spacing + (i * btn_width),
-                (self.view.pad_h - btn_height) // 2, 9999,
-                btn_width, btn_height, b[2]
+                b[0],
+                b[1],
+                (i + 1) * btn_spacing + (i * btn_width),
+                (self.view.pad_h - btn_height) // 2,
+                9999,
+                btn_width,
+                btn_height,
+                b[2],
             )
 
         self.view.add_button(
-            "menu", "Menu",
+            "menu",
+            "Menu",
             self.app.window_width - (self.view.pad_w + btn_width),
             self.app.window_height - (self.view.pad_h + btn_height) // 2,
-            9999, btn_width, btn_height, self._cmd_open_menu
+            9999,
+            btn_width,
+            btn_height,
+            self._cmd_open_menu,
         )
 
     def toggle_help(self) -> None:
@@ -86,10 +101,11 @@ class GameScene(BaseScene):
     def end_game(self) -> None:
         """Display 'YOU WIN' screen and restart game"""
         import time
+
         canvas: Any = self.view.layers.get("popup")
         canvas.clear()
-        font_scale: int = max(1, min(
-            self.app.window_height, self.app.window_width) // 100
+        font_scale: int = max(
+            1, min(self.app.window_height, self.app.window_width) // 100
         )
         text: str = "You win!"
         text_w: int = (len(text) * (self.view.font_width + 1) - 1) * font_scale
@@ -98,17 +114,29 @@ class GameScene(BaseScene):
         text_y: int = (self.app.window_height - text_h) // 2
 
         # Background dim
-        canvas.fill_rect(0, 0, self.app.window_width, self.app.window_height,
-                         0x7F000000)
+        canvas.fill_rect(
+            0, 0, self.app.window_width, self.app.window_height, 0x7F000000
+        )
         # Box background
-        canvas.fill_rect(text_x - 30, text_y - 30, text_w + 80, text_h + 80,
-                         self.app.colors.get("bg_2"))
+        canvas.fill_rect(
+            text_x - 30,
+            text_y - 30,
+            text_w + 80,
+            text_h + 80,
+            self.app.colors.get("bg_2"),
+        )
         # Box foreground
-        canvas.fill_rect(text_x - 40, text_y - 40, text_w + 80, text_h + 80,
-                         self.app.colors.get("bg_1"))
+        canvas.fill_rect(
+            text_x - 40,
+            text_y - 40,
+            text_w + 80,
+            text_h + 80,
+            self.app.colors.get("bg_1"),
+        )
         # Text
-        self.view.draw_text(canvas, text_x, text_y, text,
-                            0xFFFFFFFF, font_scale)
+        self.view.draw_text(
+            canvas, text_x, text_y, text, 0xFFFFFFFF, font_scale
+        )
 
         self.view.refresh_layers()
         self.app.mlx.mlx_do_sync(self.app.mlx_ptr)
@@ -129,7 +157,7 @@ class GameScene(BaseScene):
         KEY_RIGHT: int = 65363
         KEY_DOWN: int = 65364
 
-        is_even: int = (self.pos_y % 2 == 0)
+        is_even: int = self.pos_y % 2 == 0
         keys: set[int | None] = self.app.keypresses
         cur_cell: int = self.model.maze[self.pos_y][self.pos_x]
 

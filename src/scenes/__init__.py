@@ -9,7 +9,7 @@ __all__ = [
     "MenuScene",
     "DisplayScene",
     "GameScene",
-    "SettingsScene"
+    "SettingsScene",
 ]
 
 __author__ = "mpouillo"

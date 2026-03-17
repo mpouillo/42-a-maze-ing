@@ -9,8 +9,10 @@ from dotenv import load_dotenv
 def get_config_file() -> str:
     """Parse sys args for config filename, check access and return filename."""
     if len(sys.argv) != 2:
-        sys.exit("Incorrect usage. "
-                 "Run with: 'python3 a_maze_ing.py [config_file]")
+        sys.exit(
+            "Incorrect usage. "
+            "Run with: 'python3 a_maze_ing.py [config_file]"
+        )
     if not os.access(sys.argv[1], os.F_OK):
         sys.exit("Error: Config file not found")
     if not os.access(sys.argv[1], os.R_OK):

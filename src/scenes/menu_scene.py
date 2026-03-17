@@ -20,27 +20,36 @@ class MenuScene(BaseScene):
 
         btn_data: BtnData = [
             ("demo", "Demo", self._cmd_start_display),
-            ("play", "Play", self._cmd_start_game)
+            ("play", "Play", self._cmd_start_game),
         ]
 
         btn_width: int = self.view.ui_style.get("btn_width", 0)
         btn_height: int = self.view.ui_style.get("btn_height", 0)
-        btn_spacing: int = ((self.app.window_width
-                             - (len(btn_data) * btn_width))
-                            // (len(btn_data) + 1))
+        btn_spacing: int = (
+            self.app.window_width - (len(btn_data) * btn_width)
+        ) // (len(btn_data) + 1)
 
         for i, b in enumerate(btn_data):
             self.view.add_button(
-                b[0], b[1], (i + 1) * btn_spacing + (i * btn_width),
-                (self.app.window_height - btn_height) // 10 * 6, 9999,
-                btn_width, btn_height, b[2]
+                b[0],
+                b[1],
+                (i + 1) * btn_spacing + (i * btn_width),
+                (self.app.window_height - btn_height) // 10 * 6,
+                9999,
+                btn_width,
+                btn_height,
+                b[2],
             )
 
         self.view.add_button(
-            "settings", "Settings",
+            "settings",
+            "Settings",
             self.view.pad_w,
             self.app.window_height - (self.view.pad_h + btn_height) // 2,
-            9999, btn_width, btn_height, self._cmd_open_settings
+            9999,
+            btn_width,
+            btn_height,
+            self._cmd_open_settings,
         )
 
     def draw_bg(self) -> None:
@@ -56,8 +65,7 @@ class MenuScene(BaseScene):
             rmix: float = (offset_y + progress) % 2.0
             smix: float = 1.0 - abs(rmix - 1.0)
             color: int = self.view.get_gradient_color(
-                self.app.colors.get("bg_1"),
-                self.app.colors.get("bg_2"), smix
+                self.app.colors.get("bg_1"), self.app.colors.get("bg_2"), smix
             )
             canvas.fill_rect(0, y, canvas.width, 1, color)
 
@@ -71,29 +79,41 @@ class MenuScene(BaseScene):
         # Shadow
         offset: int = 5
         self.view.draw_text(
-            canvas, (self.app.window_width - text_w) // 2 + offset,
-            self.app.window_height // 10 * 4 + offset, text, 0xFF7F7F7F, 10
+            canvas,
+            (self.app.window_width - text_w) // 2 + offset,
+            self.app.window_height // 10 * 4 + offset,
+            text,
+            0xFF7F7F7F,
+            10,
         )
 
         # Main text
         self.view.draw_text(
-            canvas, (self.app.window_width - text_w) // 2,
-            self.app.window_height // 10 * 4, text, 0xFFFFFFFF, 10
+            canvas,
+            (self.app.window_width - text_w) // 2,
+            self.app.window_height // 10 * 4,
+            text,
+            0xFFFFFFFF,
+            10,
         )
 
     def draw_error_popup(self, message: str) -> None:
         canvas: Any = self.view.layers.get("popup")
-        base_text_w: int = (len(message) * self.view.font_width + 1)
+        base_text_w: int = len(message) * self.view.font_width + 1
         max_scale: int = self.app.window_width // base_text_w
         theme_scale: int = self.view.ui_style.get("font_scale", 1)
         font_scale: int = max(1, min(max_scale, theme_scale))
-        text_w: int = ((len(message) * (self.view.font_width + 1) - 1)
-                       * font_scale)
+        text_w: int = (
+            len(message) * (self.view.font_width + 1) - 1
+        ) * font_scale
 
         self.view.draw_text(
-            canvas, (self.app.window_width - text_w) // 2,
+            canvas,
+            (self.app.window_width - text_w) // 2,
             self.app.window_height // 10,
-            message, 0xFFFFFFFF, font_scale
+            message,
+            0xFFFFFFFF,
+            font_scale,
         )
 
     def _cmd_start_display(self) -> None:
@@ -105,6 +125,7 @@ class MenuScene(BaseScene):
             return
 
         from src.scenes import DisplayScene
+
         self.view.clear_layers()
         self.view.clear_buttons()
         self.app.current_scene = DisplayScene(self.app)
@@ -118,6 +139,7 @@ class MenuScene(BaseScene):
             return
 
         from src.scenes import GameScene
+
         self.view.clear_layers()
         self.view.clear_buttons()
         self.app.current_scene = GameScene(self.app)
@@ -125,6 +147,7 @@ class MenuScene(BaseScene):
     def _cmd_open_settings(self) -> None:
         """Change app current scene to SettingsScene"""
         from src.scenes import SettingsScene
+
         self.view.clear_layers()
         self.view.clear_buttons()
         self.app.current_scene = SettingsScene(self.app)

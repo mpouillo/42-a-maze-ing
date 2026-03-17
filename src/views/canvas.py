@@ -2,8 +2,9 @@ from typing import Any
 
 
 class Canvas:
-    def __init__(self, app: Any, x: int, y: int,
-                 z: int, width: int, height: int) -> None:
+    def __init__(
+        self, app: Any, x: int, y: int, z: int, width: int, height: int
+    ) -> None:
         self.app: Any = app
         self.x: int = x
         self.y: int = y
@@ -29,18 +30,17 @@ class Canvas:
         r: int = (color >> 16) & 0xFF
         a: int = (color >> 24) & 0xFF
 
-        return (bytes([b, g, r, a]) if self.endian == 0
-                else bytes([a, r, g, b]))
+        return bytes([b, g, r, a]) if self.endian == 0 else bytes([a, r, g, b])
 
-    def fill_rect(self, x: int, y: int,
-                  width: int, height: int,
-                  color: int) -> None:
+    def fill_rect(
+        self, x: int, y: int, width: int, height: int, color: int
+    ) -> None:
         """Fill rectangle zone in memory buffer"""
         if not (
-          0 <= x < self.width
-          and 0 <= x + width <= self.width
-          and 0 <= y < self.height
-          and 0 <= y + height <= self.height
+            0 <= x < self.width
+            and 0 <= x + width <= self.width
+            and 0 <= y < self.height
+            and 0 <= y + height <= self.height
         ):
             return
 
@@ -49,16 +49,23 @@ class Canvas:
 
         for i in range(y, y + height):
             start: int = (i * self.size_line) + (x * self.bytes_per_pixel)
-            self.buffer[start:(start + len(line_data))] = line_data
+            self.buffer[start: (start + len(line_data))] = line_data
 
     def draw_pixel(self, x: int, y: int, pixel: bytes) -> None:
         """Fill single pixel value in memory buffer"""
         if 0 <= x < self.width and 0 <= y < self.height:
             start = (y * self.size_line) + (x * self.bytes_per_pixel)
-            self.buffer[start:(start + self.bytes_per_pixel)] = pixel
+            self.buffer[start: (start + self.bytes_per_pixel)] = pixel
 
-    def draw_line(self, x0: int, y0: int, x1: int, y1: int,
-                  color: int, thickness: int = 1) -> None:
+    def draw_line(
+        self,
+        x0: int,
+        y0: int,
+        x1: int,
+        y1: int,
+        color: int,
+        thickness: int = 1,
+    ) -> None:
         """Fill memory buffer with pixel values for a straight line"""
         x0, y0, x1, y1 = int(x0), int(y0), int(x1), int(y1)
         dx, dy = abs(x1 - x0), abs(y1 - y0)
@@ -71,7 +78,7 @@ class Canvas:
             half: int = thickness // 2
             for i in range(-half, half + 1):
                 for j in range(-half, half + 1):
-                    if i*i + j*j <= half*half + 1:
+                    if i * i + j * j <= half * half + 1:
                         offsets.append((i, j))
         if not offsets:
             offsets = [(0, 0)]
@@ -91,8 +98,8 @@ class Canvas:
 
     def clear(self) -> None:
         """Fill memory buffer with 0s"""
-        self.buffer[:] = (
-            bytes([0]) * (self.width * self.height * self.bytes_per_pixel)
+        self.buffer[:] = bytes([0]) * (
+            self.width * self.height * self.bytes_per_pixel
         )
 
     def destroy(self) -> None:

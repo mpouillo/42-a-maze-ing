@@ -1,3 +1,5 @@
+"""maze generation orchestrator."""
+
 import os
 import numpy as np
 from typing import Union, Generator, Tuple, Optional, TypeAlias, Any
@@ -14,10 +16,7 @@ StepGenerator: TypeAlias = Generator[
 
 
 class MazeGenerator:
-    """
-    Main controller for Maze Generation.
-    Acts as a bridge between the Algorithm and the Display/File System.
-    """
+    """Main controller for maze generation and solving."""
 
     def __init__(self) -> None:
         try:
@@ -31,8 +30,8 @@ class MazeGenerator:
 
         # Select Strategy
         if self.config.is_hex:
-            self.generator: Union[SqrGenerator, HexGenerator] = (
-                HexGenerator(self.config)
+            self.generator: Union[SqrGenerator, HexGenerator] = HexGenerator(
+                self.config
             )
         else:
             self.generator = SqrGenerator(self.config)
@@ -57,6 +56,7 @@ class MazeGenerator:
     # FILE OPERATIONS;
 
     def initialize_maze(self) -> None:
+        """Reset internal maze grid to the initial "all-walls" state."""
         if self.config.is_hex:
             self.maze = np.full(
                 (self.config.height, self.config.width), 0x3F, dtype=np.uint8
@@ -67,6 +67,7 @@ class MazeGenerator:
             )
 
     def generate_new_maze(self) -> None:
+        """Generate a new maze, solve it, and save maze + shortest solution."""
         self.gen_steps = list(self.get_generation_steps())
         self.save_current_maze()
         self.solve_steps = list(self.generator.bfs_opti())
@@ -76,6 +77,7 @@ class MazeGenerator:
         self.save_solution(self.valid_paths[0])
 
     def get_generation_steps(self) -> StepGenerator:
+        """Yield generation step info while updating :attr:`maze`."""
         step_gen = self.generator.generate_steps()
         for maze, info in step_gen:
             self.maze = maze
@@ -95,11 +97,12 @@ class MazeGenerator:
                 yield info
 
     def save_current_maze(self) -> None:
+        """Write the current maze grid to output_file."""
         self.file_manager.write_maze(self.output_file, self.maze)
 
     def save_solution(
         self, path: Optional[list[Tuple[int, int]]] = None
     ) -> None:
-
+        """Append a solution as a direction string to :attr:`output_file`."""
         bfs_str = self.file_manager.path_to_string(path)
         self.file_manager.append_solution(self.output_file, bfs_str)

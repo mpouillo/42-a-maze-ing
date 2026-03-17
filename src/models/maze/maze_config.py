@@ -1,3 +1,5 @@
+"""Configuration model for maze generation."""
+
 from dataclasses import dataclass
 import os
 from typing import Optional, Tuple
@@ -5,6 +7,8 @@ from typing import Optional, Tuple
 
 @dataclass
 class MazeConfig:
+    """Validated maze parameters."""
+
     height: int
     width: int
     entry: Tuple[int, int]
@@ -16,7 +20,7 @@ class MazeConfig:
     @staticmethod
     def from_env() -> "MazeConfig":
         """
-        Factory method to create a MazeConfig instance from a .env file.
+        create a MazeConfig instance from a .env file.
         Performs all validation logic before creating the object.
         """
 

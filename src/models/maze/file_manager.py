@@ -1,10 +1,19 @@
+"""I/O helpers for maze serialization and solution formatting."""
+
 import numpy as np
 from typing import List, Tuple, Optional, Any
 from .maze_config import MazeConfig
 
 
 class MazeFileManager:
+    """Read/write maze data and encode solutions.
+
+    The maze grid is stored as a numpy array where each cell is a bitmask of
+    walls.
+    """
+
     def __init__(self, config: MazeConfig):
+        """Create a manager"""
         self.config = config
 
     def write_maze(self, file_path: str, maze: np.ndarray[Any, Any]) -> None:
@@ -34,18 +43,14 @@ class MazeFileManager:
     def resolve_to_string(
         self, maze: np.ndarray[Any, Any], maze_gen_instance: Any
     ) -> str:
-        """
-        Returns the solution string.
-        """
+        """Compute a solution string by walking the maze from entry to exit."""
         if self.config.is_hex:
             return self._resolve_hex(maze, maze_gen_instance)
         else:
             return self._resolve_rect(maze)
 
     def path_to_string(self, path: Optional[List[Tuple[int, int]]]) -> str:
-        """
-        Converts a list of coordinates into a direction string (NESW or ABCDEF)
-        """
+        """Convert a coordinate path into a compact direction string."""
         if not path or len(path) < 2:
             return ""
 
@@ -70,8 +75,6 @@ class MazeFileManager:
                     result.append("W")
 
         return "".join(result)
-
-    # --- Private Helpers ---
 
     def _resolve_rect(self, maze: np.ndarray[Any, Any]) -> str:
         row, col = self.config.entry
@@ -123,9 +126,6 @@ class MazeFileManager:
             curr = (row, col)
             val = int(maze[row, col])
 
-            # Hex logic relies on even/odd rows.
-            # We map specific conditions to helper functions to reduce nesting.
-
             next_step = self._get_next_hex_step(row, col, val, prev, gen)
 
             if next_step:
@@ -148,10 +148,6 @@ class MazeFileManager:
     ) -> Optional[Tuple[int, int, str]]:
         """Determines the next step for Hex maze based
         on walls and previous position."""
-
-        # Define neighbor offsets and wall masks based on generator constants
-        # Assuming gen has attributes: TOP_RIGHT, RIGHT, BOTTOM_RIGHT,
-        # BOTTOM_LEFT, LEFT, TOP_LEFT
 
         is_even = row % 2 == 0
 

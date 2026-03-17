@@ -33,27 +33,40 @@ class SettingsScene(BaseScene):
             ("perfect", "Perfect", self._cmd_update_perfect),
             ("hex", "Hex", self._cmd_update_hex),
             ("seed", "Seed", self._cmd_update_seed),
-            ("walls", "Walls", self._cmd_update_wall_color)
+            ("walls", "Walls", self._cmd_update_wall_color),
         ]
 
         btn_width: int = self.view.ui_style.get("btn_width", 0)
         btn_height: int = self.view.ui_style.get("btn_height", 0)
-        btn_spacing: int = ((self.app.window_height - self.view.pad_h
-                            - btn_height * len(btn_data))
-                            // (len(btn_data) + 1))
+        btn_spacing: int = (
+            self.app.window_height
+            - self.view.pad_h
+            - btn_height * len(btn_data)
+        ) // (len(btn_data) + 1)
 
         for i, b in enumerate(btn_data):
             self.view.add_button(
-                b[0], b[1], (self.app.window_height - btn_width) // 2,
-                (i+1) * btn_spacing + (i * btn_height) + self.view.pad_h // 2,
-                9999, btn_width, btn_height, b[2]
+                b[0],
+                b[1],
+                (self.app.window_height - btn_width) // 2,
+                (i + 1) * btn_spacing
+                + (i * btn_height)
+                + self.view.pad_h // 2,
+                9999,
+                btn_width,
+                btn_height,
+                b[2],
             )
 
         self.view.add_button(
-            "back", "Back",
+            "back",
+            "Back",
             self.view.pad_w,
             self.app.window_height - (self.view.pad_h + btn_height) // 2,
-            9999, btn_width, btn_height, self._cmd_open_menu
+            9999,
+            btn_width,
+            btn_height,
+            self._cmd_open_menu,
         )
 
     def draw_bg(self) -> None:
@@ -69,8 +82,7 @@ class SettingsScene(BaseScene):
             rmix: float = (offset_y + progress) % 2.0
             smix: float = 1.0 - abs(rmix - 1.0)
             color: int = self.view.get_gradient_color(
-                self.app.colors.get("bg_1"),
-                self.app.colors.get("bg_2"), smix
+                self.app.colors.get("bg_1"), self.app.colors.get("bg_2"), smix
             )
             canvas.fill_rect(0, y, canvas.width, 1, color)
 
@@ -132,10 +144,20 @@ class SettingsScene(BaseScene):
             pass
         while True:
             try:
-                coords: str = (",".join([
-                    str(random.randrange(0, int(os.environ.get("HEIGHT", 0)))),
-                    str(random.randrange(0, int(os.environ.get("WIDTH", 0))))
-                ]))
+                coords: str = ",".join(
+                    [
+                        str(
+                            random.randrange(
+                                0, int(os.environ.get("HEIGHT", 0))
+                            )
+                        ),
+                        str(
+                            random.randrange(
+                                0, int(os.environ.get("WIDTH", 0))
+                            )
+                        ),
+                    ]
+                )
                 os.environ["ENTRY"] = coords
                 self.app.validate_config()
                 break
@@ -156,10 +178,20 @@ class SettingsScene(BaseScene):
             pass
         while True:
             try:
-                coords: str = (",".join([
-                    str(random.randrange(0, int(os.environ.get("HEIGHT", 0)))),
-                    str(random.randrange(0, int(os.environ.get("WIDTH", 0))))
-                ]))
+                coords: str = ",".join(
+                    [
+                        str(
+                            random.randrange(
+                                0, int(os.environ.get("HEIGHT", 0))
+                            )
+                        ),
+                        str(
+                            random.randrange(
+                                0, int(os.environ.get("WIDTH", 0))
+                            )
+                        ),
+                    ]
+                )
                 os.environ["EXIT"] = coords
                 self.app.validate_config()
                 break
@@ -217,7 +249,7 @@ class SettingsScene(BaseScene):
     def _cmd_update_wall_color(self) -> None:
         """Randomize or reset maze walls color"""
         if 65362 in self.app.keypresses:
-            self.app.colors["walls"] = 0xffff006e
+            self.app.colors["walls"] = 0xFFFF006E
         else:
             self.app.colors["walls"] = random.randrange(0xFF000000, 0xFFFFFFFF)
 

@@ -2,8 +2,16 @@ from typing import Callable
 
 
 class Button:
-    def __init__(self, label: str, x: int, y: int, z: int,
-                 width: int, height: int, action: Callable[[], None]) -> None:
+    def __init__(
+        self,
+        label: str,
+        x: int,
+        y: int,
+        z: int,
+        width: int,
+        height: int,
+        action: Callable[[], None],
+    ) -> None:
         self.label: str = label
         self.x: int = x
         self.y: int = y
@@ -16,8 +24,10 @@ class Button:
 
     def is_hovered(self, mouse_x: int, mouse_y: int) -> bool:
         """Return whether mouse position is within button bounds"""
-        return (self.x <= mouse_x <= self.x + self.width and
-                self.y <= mouse_y <= self.y + self.height)
+        return (
+            self.x <= mouse_x <= self.x + self.width
+            and self.y <= mouse_y <= self.y + self.height
+        )
 
     def enable(self) -> None:
         """Toggle enabled variable to True"""

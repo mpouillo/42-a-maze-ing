@@ -38,25 +38,36 @@ class DisplayScene(BaseScene):
             ("paths", "Toggle paths", self._cmd_toggle_paths),
         ]
 
-        btn_width: int = min(self.view.ui_style.get("btn_width", 0), round(
-            self.app.window_width // len(btn_data) * 0.8))
+        btn_width: int = min(
+            self.view.ui_style.get("btn_width", 0),
+            round(self.app.window_width // len(btn_data) * 0.8),
+        )
         btn_height: int = self.view.ui_style.get("btn_height", 0)
-        btn_spacing: int = ((self.app.window_width
-                             - (len(btn_data) * btn_width))
-                            // (len(btn_data) + 1))
+        btn_spacing: int = (
+            self.app.window_width - (len(btn_data) * btn_width)
+        ) // (len(btn_data) + 1)
 
         for i, b in enumerate(btn_data):
             self.view.add_button(
-                b[0], b[1], (i + 1) * btn_spacing + (i * btn_width),
-                (self.view.pad_h - btn_height) // 2, 9999,
-                btn_width, btn_height, b[2]
+                b[0],
+                b[1],
+                (i + 1) * btn_spacing + (i * btn_width),
+                (self.view.pad_h - btn_height) // 2,
+                9999,
+                btn_width,
+                btn_height,
+                b[2],
             )
 
         self.view.add_button(
-            "menu", "Menu",
+            "menu",
+            "Menu",
             self.app.window_width - (self.view.pad_w + btn_width),
             self.app.window_height - (self.view.pad_h + btn_height) // 2,
-            9999, btn_width, btn_height, self._cmd_open_menu
+            9999,
+            btn_width,
+            btn_height,
+            self._cmd_open_menu,
         )
 
     def _cmd_generate_maze(self) -> None:
@@ -109,12 +120,16 @@ class DisplayScene(BaseScene):
         canvas = self.view.layers.get("popup")
         canvas.clear()
         self.view.draw_text(
-            canvas, self.view.offset_x,
+            canvas,
+            self.view.offset_x,
             self.app.window_height - self.view.pad_h + 20,
-            (f"Displaying path: {self.current_path + 1}/"
-             f"{len(self.model.valid_paths)}"
-             f"({len(self.model.valid_paths[self.current_path])})"),
-            0xFFFFFFFF, 3
+            (
+                f"Displaying path: {self.current_path + 1}/"
+                f"{len(self.model.valid_paths)}"
+                f"({len(self.model.valid_paths[self.current_path])})"
+            ),
+            0xFFFFFFFF,
+            3,
         )
 
         self.current_path += 1
@@ -141,9 +156,8 @@ class DisplayScene(BaseScene):
                 self.view.draw_step(self.model.solve_steps[self.solve_step])
                 self.solve_step += 1
 
-        if (
-            not self.model.valid_paths
-            or self.gen_step < len(self.model.gen_steps)
+        if not self.model.valid_paths or self.gen_step < len(
+            self.model.gen_steps
         ):
             self.view.buttons.get("solve").disable()
             self.view.buttons.get("paths").disable()

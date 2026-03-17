@@ -13,12 +13,13 @@ class Application:
     Keyword arguments:
     config_file -- local filepath for configuration file
     """
+
     def __init__(self, config_file: str) -> None:
         self.config_file: str = config_file
         self.window_width: int = 1200
         self.window_height: int = 1200
 
-        self.frame_time: float = 1/60
+        self.frame_time: float = 1 / 60
         self.last_frame: float = 0
 
         self.keypresses: set[int | None] = set()
@@ -27,16 +28,16 @@ class Application:
         self.mouse_autorepeat: bool = False
 
         self.colors: dict[str, int] = {
-            "cell": 0xfff9ac53,
-            "character": 0xff00ffff,
+            "cell": 0xFFF9AC53,
+            "character": 0xFF00FFFF,
             "entry": 0xFF00FF00,
             "exit": 0xFFFF0000,
-            "path_1": 0xff153cb4,
-            "path_2": 0xff300350,
-            "walls": 0xffe93479,
-            "step": 0xfff62e97,
-            "bg_1": 0xfff62e97,
-            "bg_2": 0xff94167f
+            "path_1": 0xFF153CB4,
+            "path_2": 0xFF300350,
+            "walls": 0xFFE93479,
+            "step": 0xFFF62E97,
+            "bg_1": 0xFFF62E97,
+            "bg_2": 0xFF94167F,
         }
 
         self.mlx: Any = Mlx()
@@ -68,7 +69,7 @@ class Application:
 
     def key_actions(self) -> None:
         """Execute actions if matching keypress detected"""
-        if 65307 in self.keypresses:    # Escape
+        if 65307 in self.keypresses:  # Escape
             self.close_window()
 
     def get_mouse_pos(self) -> tuple[int, int]:
@@ -105,7 +106,7 @@ class Application:
             "ENTRY",
             "EXIT",
             "OUTPUT_FILE",
-            "PERFECT"
+            "PERFECT",
         ]
 
         for key in REQ_KEYS:
@@ -116,11 +117,13 @@ class Application:
         logo_data: list[str] | None = None
         try:
             with open("src/models/maze/logo.txt", "r") as f:
-                logo_data = [line for line in f.read().splitlines()
-                             if line.strip()]
+                logo_data = [
+                    line for line in f.read().splitlines() if line.strip()
+                ]
         except Exception:
-            raise ValueError("Error reading logo data."
-                             "Do you have permissions?")
+            raise ValueError(
+                "Error reading logo data." "Do you have permissions?"
+            )
         if logo_data:
             logo_h: int = len(logo_data)
             logo_w: int = len(logo_data[0])
@@ -136,8 +139,9 @@ class Application:
         if width < 1:
             raise ValueError(f"Width below minimum of 1 ({width})")
         if width < logo_w:
-            raise ValueError("Width cannot be smaller than "
-                             f"logo width ({logo_w})")
+            raise ValueError(
+                "Width cannot be smaller than " f"logo width ({logo_w})"
+            )
 
         height_val: str | None = os.environ.get("HEIGHT")
         if height_val in ["None", None]:
@@ -148,8 +152,9 @@ class Application:
         if height < 1:
             raise ValueError(f"Height below minimum of 1 ({height})")
         if height < logo_h:
-            raise ValueError("Height cannot be smaller than "
-                             f"logo's ({logo_h})")
+            raise ValueError(
+                "Height cannot be smaller than " f"logo's ({logo_h})"
+            )
 
         off_x: int = (width - logo_w) // 2
         off_y: int = (height - logo_h) // 2
@@ -169,7 +174,7 @@ class Application:
             off_x <= entry_x < off_x + logo_w
             and off_y <= entry_y < off_y + logo_h
         ):
-            if logo_data[entry_y - off_y][entry_x - off_x] == '1':
+            if logo_data[entry_y - off_y][entry_x - off_x] == "1":
                 raise ValueError("Entry cannot overlap with logo")
 
         exit_val: str | None = os.environ.get("EXIT")
@@ -187,7 +192,7 @@ class Application:
             off_x <= exit_x < off_x + logo_w
             and off_y <= exit_y < off_y + logo_h
         ):
-            if logo_data[exit_y - off_y][exit_x - off_x] == '1':
+            if logo_data[exit_y - off_y][exit_x - off_x] == "1":
                 raise ValueError("Exit cannot overlap with logo")
 
         if (entry_y, entry_x) == (exit_y, exit_x):
@@ -224,7 +229,7 @@ class Application:
         self.key_actions()
 
         cur_frame: float = time.time()
-        if (cur_frame - self.last_frame >= self.frame_time):
+        if cur_frame - self.last_frame >= self.frame_time:
             self.last_frame = cur_frame
             self.current_scene.update()
             self.current_scene.render()
