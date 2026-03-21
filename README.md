@@ -70,7 +70,7 @@ Available user interactions:
 - Updating configuration (does not change the local config file)
 - Changing maze walls color
 - Switching between 'demo' (regular display) and 'play' mode.
-- Displaying viualizations for generation and solving.
+- Displaying visualizations for generation and solving.
 - Toggle between multiple possible paths (if the maze is not perfect)
 
 ### Algorithms
@@ -194,7 +194,7 @@ else:
 ```
 
 
-### Bonuses
+### Bonus
 
 - Menus and scenes
 - Interactive display
@@ -230,9 +230,9 @@ While the current structure works decently well, it is far from optimal. However
 
 - Using numpy more to manage MLX image buffers.
 - Precomputing all maze cell configurations to write them faster to the buffer.
-- Using pydantics to minimize error risk.
+- Using Pydantic to minimize error risk.
 
-Beside the MiniLibX, no external tools were used.
+Besides MiniLibX, no external tools were used.
 
 ### Resources
 
