@@ -138,6 +138,8 @@ class Application:
         width: int = int(width_val)
         if width < 1:
             raise ValueError(f"Width below minimum of 1 ({width})")
+        if width > 200:
+            raise ValueError(f"Width above maximum of 200 ({width})")
         if width < logo_w:
             raise ValueError(
                 "Width cannot be smaller than " f"logo width ({logo_w})"
@@ -151,6 +153,8 @@ class Application:
         height: int = int(height_val)
         if height < 1:
             raise ValueError(f"Height below minimum of 1 ({height})")
+        if height > 200:
+            raise ValueError(f"Width above maximum of 200 ({height})")
         if height < logo_h:
             raise ValueError(
                 "Height cannot be smaller than " f"logo's ({logo_h})"

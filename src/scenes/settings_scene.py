@@ -259,12 +259,12 @@ class SettingsScene(BaseScene):
         try:
             if btn.is_hovered(*self.app.get_mouse_pos()):
                 if 65362 in self.app.keypresses:
-                    if int(os.environ["HEIGHT"]) == 200:
+                    if int(os.environ["HEIGHT"]) >= 200:
                         return
                     os.environ["HEIGHT"] = str(int(os.environ["HEIGHT"]) + 1)
                     self.app.keypresses.remove(65362)
                 elif 65364 in self.app.keypresses:
-                    if int(os.environ["HEIGHT"]) == 0:
+                    if int(os.environ["HEIGHT"]) <= 0:
                         return
                     os.environ["HEIGHT"] = str(int(os.environ["HEIGHT"]) - 1)
                     self.app.keypresses.remove(65364)
@@ -278,12 +278,12 @@ class SettingsScene(BaseScene):
         try:
             if btn.is_hovered(*self.app.get_mouse_pos()):
                 if 65362 in self.app.keypresses:
-                    if int(os.environ["WIDTH"]) == 200:
+                    if int(os.environ["WIDTH"]) >= 200:
                         return
                     os.environ["WIDTH"] = str(int(os.environ["WIDTH"]) + 1)
                     self.app.keypresses.remove(65362)
                 elif 65364 in self.app.keypresses:
-                    if int(os.environ["WIDTH"]) == 0:
+                    if int(os.environ["WIDTH"]) <= 0:
                         return
                     os.environ["WIDTH"] = str(int(os.environ["WIDTH"]) - 1)
                     self.app.keypresses.remove(65364)
