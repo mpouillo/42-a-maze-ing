@@ -67,7 +67,7 @@ class HexGenerator:
         """Mark logo area as visited so the maze generates around it"""
         try:
             current_dir = os.path.dirname(os.path.abspath(__file__))
-            logo_path = os.path.join(current_dir, "logo.txt")
+            logo_path = os.path.join(current_dir, "logo")
 
             if not os.path.exists(logo_path):
                 return
