@@ -135,7 +135,6 @@ class Application:
                 "Error reading logo data. Do you have permissions?"
             )
         if logo_data:
-            print(logo_data)
             logo_h: int = len(logo_data)
             logo_w: int = len(logo_data[0])
         else:

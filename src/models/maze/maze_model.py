@@ -26,6 +26,7 @@ class MazeGenerator:
     def __init__(self) -> None:
         """Load configuration, select a generator, and initialize the maze."""
         try:
+            MazeConfig.validate_config()
             self.config = MazeConfig.from_env()
         except Exception as e:
             raise ValueError(f"Configuration error: {e}")

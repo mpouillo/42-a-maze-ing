@@ -18,94 +18,151 @@ class MazeConfig:
     is_hex: bool
 
     @staticmethod
-    def from_env() -> "MazeConfig":
-        """Create a :class:`~MazeConfig` instance from environment variables.
-
-        The application loads its configuration into ``os.environ`` (typically
-        from a config file). This method validates and converts those values.
-
-        Returns:
-            A validated :class:`~MazeConfig`.
+    def validate_config() -> None:
+        """Validate required environment configuration.
 
         Raises:
-            ValueError: If the environment variables are missing or invalid.
+            ValueError: If any required key is missing or invalid.
         """
+        REQ_KEYS: list[str] = [
+            "WIDTH",
+            "HEIGHT",
+            "ENTRY",
+            "EXIT",
+            "OUTPUT_FILE",
+            "PERFECT",
+        ]
 
-        # 1. Dimensions
+        for key in REQ_KEYS:
+            if key not in os.environ:
+                raise ValueError(f"Missing key in config file: {key}")
+
+        # Getting logo data to check endpoints position
+        logo_data: list[str] | None = None
         try:
-            height = int(os.environ.get("HEIGHT", 0))
-            width = int(os.environ.get("WIDTH", 0))
-        except ValueError:
-            raise ValueError("HEIGHT and WIDTH must be integers")
-
-        if height <= 0 or width <= 0:
-            raise ValueError("HEIGHT and WIDTH must be positive")
-
-        # 2. Entry Point
-        try:
-            entry_part = str(os.environ.get("ENTRY", "0,0")).strip().split(",")
-            if len(entry_part) != 2:
-                raise ValueError("Format error")
-            entry = (int(entry_part[0]), int(entry_part[1]))
-        except ValueError:
-            raise ValueError("ENTRY must be 'row,col'")
-
-        # 3. Exit Point
-        try:
-            exit_parts = str(os.environ.get("EXIT", "0,0")).strip().split(",")
-            if len(exit_parts) != 2:
-                raise ValueError("Format error")
-            exit_point = (int(exit_parts[0]), int(exit_parts[1]))
-        except ValueError:
-            raise ValueError("EXIT must be 'row,col'")
-
-        # 4. Logical Validation
-        if entry == exit_point:
-            raise ValueError("The ENTRY cant be at the same place as the EXIT")
-
-        erow, ecol = entry
-        if not (0 <= erow < height and 0 <= ecol < width):
+            with open("src/models/maze/logo", "r") as f:
+                logo_data = [
+                    line for line in f.read().splitlines() if line.strip()
+                ]
+        except Exception:
             raise ValueError(
-                f"ENTRY {entry} is outside maze bounds" f" ({height}x{width})"
+                "Error reading logo data. Do you have permissions?"
+            )
+        if logo_data:
+            logo_h: int = len(logo_data)
+            logo_w: int = len(logo_data[0])
+        else:
+            raise ValueError("No logo data found")
+
+        width_val: str | None = os.environ.get("WIDTH")
+        if width_val in ["None", None]:
+            raise ValueError("Width cannot be None")
+        if not width_val or not width_val.isdigit():
+            raise ValueError("Width must be a valid positive integer")
+        width: int = int(width_val)
+        if width < 1:
+            raise ValueError(f"Width below minimum of 1 ({width})")
+        if width > 200:
+            raise ValueError(f"Width above maximum of 200 ({width})")
+        if width < logo_w:
+            raise ValueError(
+                "Width cannot be smaller than " f"logo width ({logo_w})"
             )
 
-        xrow, xcol = exit_point
-        if not (0 <= xrow < height and 0 <= xcol < width):
+        height_val: str | None = os.environ.get("HEIGHT")
+        if height_val in ["None", None]:
+            raise ValueError("Height cannot be None")
+        if not height_val or not height_val.isdigit():
+            raise ValueError("Height must be a valid positive integer")
+        height: int = int(height_val)
+        if height < 1:
+            raise ValueError(f"Height below minimum of 1 ({height})")
+        if height > 200:
+            raise ValueError(f"Width above maximum of 200 ({height})")
+        if height < logo_h:
             raise ValueError(
-                f"EXIT {exit_point} is outside maze bounds"
-                f" ({height}x{width})"
+                "Height cannot be smaller than " f"logo's ({logo_h})"
             )
 
-        # 5. Seed
-        seed_val: Optional[int] = None
-        seed_env = os.environ.get("SEED")
-        if seed_env:
-            try:
-                seed_val = int(seed_env)
-            except ValueError:
-                seed_val = None
+        off_x: int = (width - logo_w) // 2
+        off_y: int = (height - logo_h) // 2
 
-        # 6. Boolean Flags
-        perfect_str = str(os.environ.get("PERFECT", "True"))
-        if perfect_str in ["False", "0"]:
-            perfect = False
-        elif perfect_str in ["True", "1"]:
-            perfect = True
-        else:
-            raise ValueError("PERFECT is not a bool : True(1) or False(0)")
+        entry_val: str | None = os.environ.get("ENTRY")
+        if not entry_val:
+            raise ValueError("Entry cannot be None")
+        if "," not in entry_val:
+            raise ValueError("Entry coordinates must be separated by a ','")
+        entry_val_y, entry_val_x = entry_val.split(",", 1)
+        if not entry_val_x.isdigit() or not entry_val_y.isdigit():
+            raise ValueError("Entry must be 2 valid positive integers")
+        entry_y, entry_x = int(entry_val_y), int(entry_val_x)
+        if not 0 <= entry_x < width or not 0 <= entry_y < height:
+            raise ValueError("Entry coordinates must fit within the maze")
+        if (
+            off_x <= entry_x < off_x + logo_w
+            and off_y <= entry_y < off_y + logo_h
+        ):
+            if logo_data[entry_y - off_y][entry_x - off_x] == "1":
+                raise ValueError("Entry cannot overlap with logo")
 
-        hex_str = str(os.environ.get("HEX", "False"))
-        if hex_str in ["False", "0"]:
-            is_hex = False
-        elif hex_str in ["True", "1"]:
-            is_hex = True
-        else:
-            raise ValueError("HEX is not a bool : True(1) or False(0)")
+        exit_val: str | None = os.environ.get("EXIT")
+        if not exit_val:
+            raise ValueError("Exit cannot be None")
+        if "," not in exit_val:
+            raise ValueError("Exit coordinates must be separated by a ','")
+        exit_val_y, exit_val_x = exit_val.split(",", 1)
+        if not exit_val_x.isdigit() or not exit_val_y.isdigit():
+            raise ValueError("Exit must be 2 valid positive integers")
+        exit_y, exit_x = int(exit_val_y), int(exit_val_x)
+        if not 0 <= exit_x < width or not 0 <= exit_y < height:
+            raise ValueError("Exit coordinates must fit within the maze")
+        if (
+            off_x <= exit_x < off_x + logo_w
+            and off_y <= exit_y < off_y + logo_h
+        ):
+            if logo_data[exit_y - off_y][exit_x - off_x] == "1":
+                raise ValueError("Exit cannot overlap with logo")
+
+        if (entry_y, entry_x) == (exit_y, exit_x):
+            raise ValueError("Entry and Exit cannot overlap")
+
+        perfect: str | None = os.environ.get("PERFECT")
+        if not perfect:
+            raise ValueError("Perfect state cannot be None")
+        if perfect.lower() not in ["true", "false", "0", "1"]:
+            raise ValueError("Perfect state should be either True or False")
+
+        hex_val: str | None = os.environ.get("HEX")
+        if hex_val and hex_val.lower() not in ["true", "false", "0", "1"]:
+            raise ValueError("Hex state should be either True or False")
+
+        seed: str | None = os.environ.get("SEED")
+        if seed and seed.isdigit():
+            if int(seed) < 0:
+                raise ValueError(f"Seed below minimum of 0 ({seed})")
+        elif seed:
+            if seed.lower() != "random":
+                raise ValueError(
+                    "Seed should be None, 'Random', or a valid integer"
+                )
+
+
+    @staticmethod
+    def from_env() -> "MazeConfig":
+        height=int(os.environ.get("HEIGHT", 0))
+        width=int(os.environ.get("HEIGHT", 0))
+        entry_part = os.environ.get("ENTRY", "0,0").split(",")
+        entry_point = (int(entry_part[0]), int(entry_part[1]))
+        exit_parts = os.environ.get("EXIT", "0,0").strip().split(",")
+        exit_point = (int(exit_parts[0]), int(exit_parts[1]))
+        seed_val = int(os.environ.get("SEED", 0))
+        perfect = bool(os.environ.get("PERFECT", 0))
+        is_hex = bool(os.environ.get("HEX", 0))
 
         return MazeConfig(
             height=height,
             width=width,
-            entry=entry,
+            entry=entry_point,
             exit=exit_point,
             seed=seed_val,
             perfect=perfect,
