@@ -198,12 +198,6 @@ class Application:
         if (entry_y, entry_x) == (exit_y, exit_x):
             raise ValueError("Entry and Exit cannot overlap")
 
-        output_file: str | None = os.environ.get("OUTPUT_FILE")
-        if not output_file:
-            raise ValueError("Output file cannot be None")
-        if os.path.splitext(output_file)[1] != ".txt":
-            raise ValueError("Output file extension must be .txt")
-
         perfect: str | None = os.environ.get("PERFECT")
         if not perfect:
             raise ValueError("Perfect state cannot be None")

@@ -3,6 +3,7 @@
 import sys
 import os
 from src import Application
+from pathlib import Path
 
 
 def parse_config(config_file: str) -> None:
@@ -39,6 +40,17 @@ def parse_config(config_file: str) -> None:
 
     except Exception as e:
         sys.exit(f"Error parsing config: {e}")
+
+    # Output path validation
+    output_file: str = os.environ.get("OUTPUT_FILE", "")
+    if not output_file:
+        raise ValueError("Output file cannot be None")
+    output_path = Path(output_file)
+    if output_path.suffix != ".txt":
+        raise ValueError("Output file extension must be .txt")
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    if output_path.is_dir():
+        raise ValueError("Output file is a directory")
 
 
 def get_config_file() -> str:
