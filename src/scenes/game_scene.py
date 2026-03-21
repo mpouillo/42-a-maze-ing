@@ -160,39 +160,54 @@ class GameScene(BaseScene):
         is_even: int = self.pos_y % 2 == 0
         keys: set[int | None] = self.app.keypresses
         cur_cell: int = self.model.maze[self.pos_y][self.pos_x]
+        pressed_keys: set[int] = set()
 
         if not self.model.config.is_hex:
             if KEY_LEFT in keys and not cur_cell & 8:
                 self.pos_x -= 1
+                pressed_keys.add(KEY_LEFT)
             elif KEY_UP in keys and not cur_cell & 1:
                 self.pos_y -= 1
+                pressed_keys.add(KEY_UP)
             elif KEY_DOWN in keys and not cur_cell & 4:
                 self.pos_y += 1
+                pressed_keys.add(KEY_DOWN)
             elif KEY_RIGHT in keys and not cur_cell & 2:
                 self.pos_x += 1
+                pressed_keys.add(KEY_RIGHT)
         else:
             if KEY_LEFT in keys:
                 if KEY_UP in keys and not cur_cell & 32:
                     self.pos_y -= 1
                     if is_even:
                         self.pos_x -= 1
+                    pressed_keys.add(KEY_LEFT)
+                    pressed_keys.add(KEY_UP)
                 elif KEY_DOWN in keys and not cur_cell & 8:
                     self.pos_y += 1
                     if is_even:
                         self.pos_x -= 1
+                    pressed_keys.add(KEY_LEFT)
+                    pressed_keys.add(KEY_DOWN)
                 elif not cur_cell & 16:
                     self.pos_x -= 1
+                    pressed_keys.add(KEY_LEFT)
             elif KEY_RIGHT in keys:
                 if KEY_UP in keys and not cur_cell & 1:
                     self.pos_y -= 1
                     if not is_even:
                         self.pos_x += 1
+                    pressed_keys.add(KEY_RIGHT)
+                    pressed_keys.add(KEY_UP)
                 elif KEY_DOWN in keys and not cur_cell & 4:
                     self.pos_y += 1
                     if not is_even:
                         self.pos_x += 1
+                    pressed_keys.add(KEY_RIGHT)
+                    pressed_keys.add(KEY_DOWN)
                 elif not cur_cell & 2:
                     self.pos_x += 1
+                    pressed_keys.add(KEY_RIGHT)
 
         # Exit reached
         if (self.pos_y, self.pos_x) == self.model.config.exit:
@@ -201,8 +216,7 @@ class GameScene(BaseScene):
 
         # Precise movements
         if 65507 in self.app.keypresses:
-            self.app.keypresses.clear()
-            self.app.keypresses.add(65507)
+            self.app.keypresses -= pressed_keys
 
         if 108 in self.app.keypresses:
             self.end_game()

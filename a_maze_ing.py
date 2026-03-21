@@ -3,7 +3,42 @@
 import sys
 import os
 from src import Application
-from dotenv import load_dotenv
+
+
+def parse_config(config_file: str) -> None:
+    valid_keys = [
+        "HEIGHT",
+        "WIDTH",
+        "ENTRY",
+        "EXIT",
+        "OUTPUT_FILE",
+        "PERFECT",
+        "SEED",
+        "HEX"
+    ]
+
+    try:
+        with open(config_file, "r") as f:
+            for line in f:
+                if line.startswith("#"):
+                    continue
+                if not line.strip():
+                    continue
+                if len(line.split("#", 1)) != 1:
+                    raise ValueError("Inline comments are forbidden")
+
+                split_result: list[str] = [
+                    part.strip() for part in line.split("=", 1)
+                ]
+                if len(split_result) != 2:
+                    raise ValueError("Key missing '=' separator")
+                key, value = split_result
+                if key not in valid_keys:
+                    raise ValueError("Invalid key in config file")
+                os.environ[key] = value
+
+    except Exception as e:
+        sys.exit(f"Error parsing config: {e}")
 
 
 def get_config_file() -> str:
@@ -23,7 +58,7 @@ def get_config_file() -> str:
 def main() -> None:
     """Get config from args and run application."""
     config_file = get_config_file()
-    load_dotenv(config_file)
+    parse_config(config_file)
     app = Application(config_file)
     app.run()
 

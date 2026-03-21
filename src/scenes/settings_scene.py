@@ -48,7 +48,7 @@ class SettingsScene(BaseScene):
             self.view.add_button(
                 b[0],
                 b[1],
-                (self.app.window_height - btn_width) // 2,
+                (self.app.window_width - btn_width) // 2,
                 (i + 1) * btn_spacing
                 + (i * btn_height)
                 + self.view.pad_h // 2,

@@ -71,7 +71,7 @@ install_mlx:
 			$(MAKE) \
 		) >/dev/null 2>&1 && \
 		$(ENV_PYTHON) -m pip install mlx_CLXV/mlx-2.2-py3-none-any.whl -q && \
-		$(RM) -r mlx_CLXV mlx_CLXV-2.2.tgz \
+		$(RM) -r mlx_CLXV mlx_CLXV-2.2.tgz* \
 		|| (echo "Error: mlx installation failed."; exit 1); \
 	else \
 		echo "Mlx already installed."; \

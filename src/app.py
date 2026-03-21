@@ -17,7 +17,7 @@ class Application:
     def __init__(self, config_file: str) -> None:
         self.config_file: str = config_file
         self.window_width: int = 1200
-        self.window_height: int = 1200
+        self.window_height: int = 900
 
         self.frame_time: float = 1 / 60
         self.last_frame: float = 0
