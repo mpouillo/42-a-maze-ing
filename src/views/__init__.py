@@ -1,3 +1,5 @@
+"""View helpers for drawing and UI widgets."""
+
 from .canvas import Canvas
 from .ui_components import Button
 from .renderers import SquareRenderer

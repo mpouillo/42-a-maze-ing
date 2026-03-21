@@ -1,3 +1,9 @@
+"""Main menu scene.
+
+Provides the initial screen with navigation to demo/display mode, game mode,
+and settings.
+"""
+
 from src.scenes import BaseScene
 from src.views.renderers import BaseRenderer
 from typing import Any, Callable, TypeAlias
@@ -6,7 +12,10 @@ BtnData: TypeAlias = list[tuple[str, str, Callable[[], None]]]
 
 
 class MenuScene(BaseScene):
+    """Scene displaying the main menu UI."""
+
     def __init__(self, app: Any) -> None:
+        """Initialize menu scene state and build the UI."""
         super().__init__(app)
         self.bg_step: int = 0
         self.view: Any = BaseRenderer(self.app, self.model)
@@ -15,7 +24,7 @@ class MenuScene(BaseScene):
         self.draw_title()
 
     def setup_ui(self) -> None:
-        """Create buttons with default values"""
+        """Create and position the menu buttons."""
         self.view.clear_buttons()
 
         btn_data: BtnData = [
@@ -53,7 +62,7 @@ class MenuScene(BaseScene):
         )
 
     def draw_bg(self) -> None:
-        """Render background depending on current step value"""
+        """Render the animated background gradient for this frame."""
         canvas: Any = self.view.layers.get("bg")
         height: int = self.app.window_height
         if self.bg_step == 2 * height:
@@ -70,7 +79,7 @@ class MenuScene(BaseScene):
             canvas.fill_rect(0, y, canvas.width, 1, color)
 
     def draw_title(self) -> None:
-        """Render application title text"""
+        """Render the application title on the popup layer."""
         canvas: Any = self.view.layers.get("popup")
         text: str = "A-Maze-ing"
         scale: int = 10
@@ -98,6 +107,11 @@ class MenuScene(BaseScene):
         )
 
     def draw_error_popup(self, message: str) -> None:
+        """Display a one-line error message on the popup layer.
+
+        Args:
+            message: Error text to display.
+        """
         canvas: Any = self.view.layers.get("popup")
         base_text_w: int = len(message) * self.view.font_width + 1
         max_scale: int = self.app.window_width // base_text_w
@@ -117,7 +131,7 @@ class MenuScene(BaseScene):
         )
 
     def _cmd_start_display(self) -> None:
-        """Change app current scene to DisplayScene"""
+        """Validate config and switch to :class:`~DisplayScene`."""
         try:
             self.app.validate_config()
         except Exception as e:
@@ -131,7 +145,7 @@ class MenuScene(BaseScene):
         self.app.current_scene = DisplayScene(self.app)
 
     def _cmd_start_game(self) -> None:
-        """Change app current scene to GameScene"""
+        """Validate config and switch to :class:`~GameScene`."""
         try:
             self.app.validate_config()
         except Exception as e:
@@ -145,7 +159,7 @@ class MenuScene(BaseScene):
         self.app.current_scene = GameScene(self.app)
 
     def _cmd_open_settings(self) -> None:
-        """Change app current scene to SettingsScene"""
+        """Switch to :class:`~SettingsScene`."""
         from src.scenes import SettingsScene
 
         self.view.clear_layers()
@@ -153,11 +167,11 @@ class MenuScene(BaseScene):
         self.app.current_scene = SettingsScene(self.app)
 
     def update(self) -> None:
-        """Update maze display depending on current values"""
+        """Update menu animations and hover state."""
         self.draw_bg()
         self.bg_step += 10
         super().update()
 
     def render(self) -> None:
-        """Update current frame"""
+        """Render the menu frame."""
         super().render()

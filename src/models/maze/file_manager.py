@@ -13,7 +13,7 @@ class MazeFileManager:
     """
 
     def __init__(self, config: MazeConfig):
-        """Create a manager"""
+        """Create a new file manager bound to a validated config."""
         self.config = config
 
     def write_maze(self, file_path: str, maze: np.ndarray[Any, Any]) -> None:
@@ -77,6 +77,7 @@ class MazeFileManager:
         return "".join(result)
 
     def _resolve_rect(self, maze: np.ndarray[Any, Any]) -> str:
+        """Resolve a path string for a square maze by following open walls."""
         row, col = self.config.entry
         prev: Optional[Tuple[int, int]] = None
         path_chars = []
@@ -118,6 +119,7 @@ class MazeFileManager:
         return "".join(path_chars)
 
     def _resolve_hex(self, maze: np.ndarray[Any, Any], gen: Any) -> str:
+        """Resolve a path string for a hex maze by following open walls."""
         row, col = self.config.entry
         prev: Optional[Tuple[int, int]] = None
         path_chars = []
@@ -146,8 +148,19 @@ class MazeFileManager:
         prev: Optional[Tuple[int, int]],
         gen: Any,
     ) -> Optional[Tuple[int, int, str]]:
-        """Determines the next step for Hex maze based
-        on walls and previous position."""
+        """Determine the next move in a hex maze.
+
+        Args:
+            row: Current row.
+            col: Current column.
+            val: Current cell wall bitmask.
+            prev: Previous cell (used to avoid immediately backtracking).
+            gen: Generator instance providing wall masks and config.
+
+        Returns:
+            A tuple ``(new_row, new_col, direction_char)`` or ``None`` if no
+            forward move is available.
+        """
 
         is_even = row % 2 == 0
 
@@ -182,7 +195,7 @@ class MazeFileManager:
     def _get_hex_direction(
         self, curr: Tuple[int, int], nxt: Tuple[int, int]
     ) -> str:
-        """Helper to find direction char between two hex cells"""
+        """Return the direction letter between two adjacent hex cells."""
         r, c = curr
         nr, nc = nxt
 

@@ -1,3 +1,9 @@
+"""Interactive maze game scene.
+
+This scene lets the player navigate from entry to exit using keyboard input.
+It can optionally draw a helper path.
+"""
+
 from src.models.maze import MazeGenerator
 from src.scenes import BaseScene
 from src.views.renderers import SquareRenderer, HexRenderer
@@ -7,7 +13,10 @@ BtnData: TypeAlias = list[tuple[str, str, Callable[[], None]]]
 
 
 class GameScene(BaseScene):
+    """Scene implementing the interactive maze game."""
+
     def __init__(self, app: Any) -> None:
+        """Create the game scene, generate a maze, and set initial position."""
         super().__init__(app)
 
         self.model: Any = MazeGenerator()
@@ -36,7 +45,7 @@ class GameScene(BaseScene):
         self.view.draw_endpoints()
 
     def setup_ui(self) -> None:
-        """Create buttons with default values"""
+        """Create and position the in-game buttons."""
         self.view.clear_buttons()
 
         btn_data: BtnData = [
@@ -77,7 +86,7 @@ class GameScene(BaseScene):
         )
 
     def toggle_help(self) -> None:
-        """Toggle visibility for shortest path to exit"""
+        """Toggle on-screen helper path display."""
         if self.help:
             self.view.buttons.get("help").label = "Help OFF"
             self.help = False
@@ -86,20 +95,20 @@ class GameScene(BaseScene):
             self.help = True
 
     def reset_game(self) -> None:
-        """Move character back to start"""
+        """Reset the player position to the entry cell."""
         self.pos_x = self.model.config.entry[1]
         self.pos_y = self.model.config.entry[0]
         self.view.refresh_layers()
 
     def draw_character(self) -> None:
-        """Render character at current position"""
+        """Render the player character at its current position."""
         color: int = self.app.colors.get("character")
         canvas: Any = self.view.layers.get("char")
         canvas.clear()
         self.view.draw_cell_center(canvas, self.pos_x, self.pos_y, color)
 
     def end_game(self) -> None:
-        """Display 'YOU WIN' screen and restart game"""
+        """Display a win popup, then regenerate and restart the game."""
         import time
 
         canvas: Any = self.view.layers.get("popup")
@@ -151,7 +160,7 @@ class GameScene(BaseScene):
         self.reset_game()
 
     def update(self) -> None:
-        """Update maze display depending on current values"""
+        """Handle player movement and per-frame game logic."""
         KEY_LEFT: int = 65361
         KEY_UP: int = 65362
         KEY_RIGHT: int = 65363
@@ -224,7 +233,7 @@ class GameScene(BaseScene):
         super().update()
 
     def render(self) -> None:
-        """Update current frame"""
+        """Render the game frame (character, optional help path, UI)."""
         self.draw_character()
         if self.help is True:
             cur = (self.pos_y, self.pos_x)

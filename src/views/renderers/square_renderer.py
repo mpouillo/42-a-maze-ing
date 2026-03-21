@@ -1,3 +1,5 @@
+"""Square-grid (orthogonal) maze renderer."""
+
 from src.views.renderers import BaseRenderer
 from src.views import Canvas
 from typing import Any, TypeAlias
@@ -6,7 +8,10 @@ StepTuple: TypeAlias = tuple[str, tuple[int, int], tuple[int, int]]
 
 
 class SquareRenderer(BaseRenderer):
+    """Renderer that draws a rectangular maze (4-neighbor walls)."""
+
     def __init__(self, app: Any, model: Any) -> None:
+        """Initialize layers used to draw maze, path, and endpoints."""
         super().__init__(app, model)
 
         self.wall_size: int = 4
@@ -29,7 +34,7 @@ class SquareRenderer(BaseRenderer):
         )
 
     def compute_scales(self) -> None:
-        """Calculate required sizes for maze display"""
+        """Compute cell sizes and offsets to fit the maze into the window."""
         available_w: int = (
             self.app.window_width - self.pad_w * 2 - self.wall_size
         )
@@ -52,7 +57,7 @@ class SquareRenderer(BaseRenderer):
         self.offset_y: int = (self.app.window_height - self.maze_h) // 2
 
     def draw_maze(self) -> None:
-        """render maze to maze layer"""
+        """Render the maze walls and cell fills to the maze layer."""
         wall_color: int = self.app.colors.get("walls")
         cell_color: int = self.app.colors.get("cell")
         canvas: Any = self.layers.get("maze")
@@ -67,7 +72,7 @@ class SquareRenderer(BaseRenderer):
                     self.draw_cell_center(canvas, x, y, cell_color)
 
     def draw_path(self, path: list[tuple[int, int]]) -> None:
-        """Render path to path layer"""
+        """Render a path overlay to the path layer."""
         color_start: int = self.app.colors.get("path_1")
         color_end: int = self.app.colors.get("path_2")
         canvas: Any = self.layers.get("path")
@@ -94,7 +99,7 @@ class SquareRenderer(BaseRenderer):
             self.draw_cell_walls(canvas, x1, y1, wall, False, color)
 
     def draw_step(self, step_data: StepTuple) -> None:
-        """Render step to either path or maze layer"""
+        """Render a single generation/solve step to the appropriate layer."""
         step_color: int = self.app.colors.get("step")
         cmd, (y1, x1), (y2, x2) = step_data
 
@@ -134,7 +139,7 @@ class SquareRenderer(BaseRenderer):
         self.prev_gen = (x2, y2)
 
     def draw_endpoints(self) -> None:
-        """Draw entry and exit to endpoints layer"""
+        """Draw entry and exit markers on the endpoints layer."""
         canvas: Any = self.layers.get("endpoints")
         self.draw_cell_center(
             canvas,
@@ -152,7 +157,7 @@ class SquareRenderer(BaseRenderer):
     def draw_cell_center(
         self, canvas: Canvas, x: int, y: int, color: int = 0xFF000000
     ) -> None:
-        """Draw square center of cell to canvas"""
+        """Draw the interior (center) of one cell."""
         cell: int = self.cell_size
         wall: int = self.wall_size
         canvas.fill_rect(
@@ -168,7 +173,16 @@ class SquareRenderer(BaseRenderer):
         corners: bool = False,
         color: int = 0xFF000000,
     ) -> None:
-        """Draw walls of cell to canvas"""
+        """Draw walls of a cell.
+
+        Args:
+            canvas: Target canvas.
+            x: Column index.
+            y: Row index.
+            value: Wall bitmask for the cell.
+            corners: Whether to include outer corner pixels.
+            color: Wall color.
+        """
         cell: int = self.cell_size
         wall: int = self.wall_size
         x *= cell

@@ -64,7 +64,10 @@ class HexGenerator:
         )
 
     def set_logo_as_visited(self) -> None:
-        """Mark logo area as visited so the maze generates around it"""
+        """Mark the embedded logo area as visited.
+
+        This forces generation and solving logic to route around the logo.
+        """
         try:
             current_dir = os.path.dirname(os.path.abspath(__file__))
             logo_path = os.path.join(current_dir, "logo")
@@ -92,7 +95,7 @@ class HexGenerator:
     def get_unvisited_neighbors(
         self, cell: Tuple[int, int]
     ) -> List[Tuple[int, int]]:
-        """Return list of valid unvisited neighbors"""
+        """Return valid unvisited neighbors of a cell."""
         r, c = cell
         neighbors = []
 
@@ -109,7 +112,7 @@ class HexGenerator:
     def remove_wall(
         self, current: Tuple[int, int], next_cell: Tuple[int, int]
     ) -> None:
-        """Remove walls between two adjacent cells"""
+        """Remove walls between two adjacent hex cells."""
         cr, cc = current
         nr, nc = next_cell
         dr, dc = nr - cr, nc - cc
@@ -122,7 +125,7 @@ class HexGenerator:
             self.maze[next_cell] &= 0xFF & ~next_mask
 
     def generate_steps(self) -> Generator[Any, None, None]:
-        """randomized DFS generation on a hex grid."""
+        """Run randomized DFS generation on a hex grid, yielding steps."""
         self.initialize_maze()
         self.initialize_visited()
         self.set_logo_as_visited()
@@ -150,7 +153,7 @@ class HexGenerator:
                 yield self.maze, ("remove", curr_cell, next_cell)
 
     def generate(self) -> np.ndarray[Any, Any]:
-        """Blocking generation (consumes the steps generator)"""
+        """Generate a full maze and return the resulting grid."""
         for _ in self.generate_steps():
             pass
         return self.maze
@@ -158,7 +161,7 @@ class HexGenerator:
     def count_walls(
         self, row: int, col: int, maze: np.ndarray[Any, Any]
     ) -> int:
-        """Count how many walls a specific cell has"""
+        """Count the number of closed walls for a given cell."""
         cell_val = maze[row, col]
         return bin(cell_val & self.FULL).count("1")
 
@@ -200,9 +203,7 @@ class HexGenerator:
                 break
 
     def solve_deadends_steps(self) -> Generator[Any, None, None]:
-        """
-        Yields map state while removing dead ends.
-        """
+        """Yield intermediate states while pruning dead ends."""
         maze = self.maze.copy()
 
         yield maze, self.config.entry
@@ -225,7 +226,7 @@ class HexGenerator:
                 break
 
     def solve_deadends(self) -> np.ndarray[Any, Any]:
-        """that consumes the steps generator to add deadend"""
+        """Return a maze copy with dead ends removed."""
         last_maze = self.maze.copy()
         for maze_state, _ in self.solve_deadends_steps():
             last_maze = maze_state
@@ -236,6 +237,7 @@ class HexGenerator:
         solved: np.ndarray[Any, Any],
         solution_str_len: int,
     ) -> Generator[Any, None, None]:
+        """Yield steps while adding extra paths to make a non-perfect maze."""
 
         row, col = self.config.entry
         solve_size = max(0, solution_str_len)
@@ -290,7 +292,7 @@ class HexGenerator:
         solved: np.ndarray[Any, Any],
         solution_str_len: int,
     ) -> np.ndarray[Any, Any]:
-        """consumes the steps generator to add path"""
+        """Add extra paths to the maze and return the modified grid."""
         for _ in self.add_paths_steps(solved, solution_str_len):
             pass
         return self.maze
@@ -300,6 +302,7 @@ class HexGenerator:
         solved: np.ndarray[Any, Any],
         cell: Tuple[int, int],
     ) -> Optional[Tuple[int, int]]:
+        """Return a neighboring cell that is currently blocked by a wall."""
         row, col = cell
         candidates: List[Tuple[int, int]] = []
 
@@ -326,6 +329,7 @@ class HexGenerator:
         self,
         cell: Tuple[int, int],
     ) -> List[Tuple[int, int]]:
+        """Return neighbors reachable from *cell* in the current maze."""
         r, c = cell
         neighbors: List[Tuple[int, int]] = []
 
@@ -343,6 +347,10 @@ class HexGenerator:
         return neighbors
 
     def bfs(self, max_paths: int = 999) -> Generator[Any, None, None]:
+        """Enumerate paths from entry to exit using BFS.
+
+        Yields exploration steps as (command, current_cell, next_cell).
+        """
         self.initialize_visited()
         self.set_logo_as_visited()
         self.bfs_paths = []
@@ -371,6 +379,7 @@ class HexGenerator:
         cell: Tuple[int, int],
         maze: np.ndarray[Any, Any],
     ) -> List[Tuple[int, int]]:
+        """Return open neighbors for a given cell in the provided maze grid."""
         r, c = cell
         neighbors: List[Tuple[int, int]] = []
 
@@ -393,6 +402,10 @@ class HexGenerator:
         )
 
     def bfs_opti(self) -> Generator[Any, None, None]:
+        """Run multi-path search on the dead-end-solved maze.
+
+        Yields the exploration steps.
+        """
         self.initialize_visited()
         self.set_logo_as_visited()
         self.bfs_paths = []
@@ -406,6 +419,19 @@ class HexGenerator:
         maze: np.ndarray[Any, Any],
         out_path: List[List[Tuple[int, int]]],
     ) -> Generator[Any, None, None]:
+        """Run A* to find a shortest path and yield exploration steps.
+
+        This variant stores the discovered solution in *out_path* when the exit
+        is reached.
+
+        Args:
+            maze: Maze grid to traverse.
+            out_path: Output list that will receive the path as a list of
+                ``(row, col)`` coordinates.
+
+        Yields:
+            Step tuples used for animation, typically ``("fill", cur, nxt)``.
+        """
         exit_ = self.config.exit
         start = self.config.entry
 
@@ -447,6 +473,18 @@ class HexGenerator:
         maze: np.ndarray[Any, Any],
         out_path: List[List[Tuple[int, int]]],
     ) -> Generator[Any, None, None]:
+        """Run a "longest" path search and yield exploration steps.
+
+        This uses a best-first search biased toward longer paths (by pushing
+        negative g-cost) and stores the resulting path in *out_path*.
+
+        Args:
+            maze: Maze grid to traverse.
+            out_path: Output list receiving the selected path.
+
+        Yields:
+            Step tuples used for animation.
+        """
         exit_ = self.config.exit
         start = self.config.entry
 
@@ -489,6 +527,20 @@ class HexGenerator:
         exclude: Set[Tuple[Tuple[int, int], ...]],
         out_path: List[List[Tuple[int, int]]],
     ) -> Generator[Any, None, None]:
+        """Search for a path whose length is close to *target_len*.
+
+        The search explores candidates and keeps the best path whose length
+        deviates the least from *target_len*, skipping any path in *exclude*.
+
+        Args:
+            maze: Maze grid to traverse.
+            target_len: Desired path length.
+            exclude: Set of paths (as tuples of coordinates) to ignore.
+            out_path: Output list receiving the best path found.
+
+        Yields:
+            Step tuples for visualization.
+        """
         exit_ = self.config.exit
         start = self.config.entry
 
@@ -548,6 +600,19 @@ class HexGenerator:
         self,
         maze: np.ndarray[Any, Any],
     ) -> Generator[Any, None, None]:
+        """Populate :attr:`bfs_paths` with several representative valid paths.
+
+        This method computes:
+        - a first shortest path,
+        - a longest path candidate,
+        - and a few intermediate-length paths.
+
+        Args:
+            maze: Maze grid to traverse.
+
+        Yields:
+            Step tuples for visualization while searching.
+        """
         self.bfs_paths = []
         exclude: Set[Tuple[Tuple[int, int], ...]] = set()
         first = None

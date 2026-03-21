@@ -1,3 +1,9 @@
+"""Maze display (demo) scene.
+
+This scene animates maze generation/solving and allows toggling between
+different shortest valid paths.
+"""
+
 from src.models.maze import MazeGenerator
 from src.scenes import BaseScene
 from src.views.renderers import SquareRenderer, HexRenderer
@@ -7,7 +13,10 @@ BtnData: TypeAlias = list[tuple[str, str, Callable[[], None]]]
 
 
 class DisplayScene(BaseScene):
+    """Scene that visualizes maze generation and solution paths."""
+
     def __init__(self, app: Any) -> None:
+        """Create the display scene and initialize renderer/model."""
         super().__init__(app)
 
         self.solving: bool = False
@@ -29,7 +38,7 @@ class DisplayScene(BaseScene):
         self.view.draw_endpoints()
 
     def setup_ui(self) -> None:
-        """Create buttons with default values"""
+        """Create and position the display scene buttons."""
         self.view.clear_buttons()
 
         btn_data: BtnData = [
@@ -71,7 +80,7 @@ class DisplayScene(BaseScene):
         )
 
     def _cmd_generate_maze(self) -> None:
-        """Start or skip maze generation display"""
+        """Start maze generation animation or skip to the end."""
         self.solving = False
 
         if self.generating:
@@ -88,7 +97,7 @@ class DisplayScene(BaseScene):
             self.generating = True
 
     def _cmd_solve_maze(self) -> None:
-        """Start or skip maze solving display"""
+        """Start maze solving animation or skip to the end."""
         if self.generating:
             return
 
@@ -103,7 +112,7 @@ class DisplayScene(BaseScene):
             self.solving = True
 
     def _cmd_toggle_paths(self) -> None:
-        """Toggle visibility for valid paths"""
+        """Cycle through (or hide) the available valid shortest paths."""
         if self.solving:
             self.solving = False
 
@@ -137,7 +146,7 @@ class DisplayScene(BaseScene):
             self.current_path = 0
 
     def update(self) -> None:
-        """Update maze display depending on current values"""
+        """Advance generation/solving animations and update UI state."""
         if self.generating is True:
             if self.gen_step >= len(self.model.gen_steps):
                 self.view.draw_maze()
@@ -168,5 +177,5 @@ class DisplayScene(BaseScene):
         super().update()
 
     def render(self) -> None:
-        """Update current frame"""
+        """Render the display scene frame."""
         super().render()

@@ -1,3 +1,8 @@
+"""Scene package.
+
+Scenes represent distinct UI states (menu, display, game, settings).
+"""
+
 from .base_scene import BaseScene
 from .menu_scene import MenuScene
 from .display_scene import DisplayScene

@@ -1,3 +1,9 @@
+"""Settings scene.
+
+Allows tweaking environment-backed configuration values (dimensions,
+entry/exit, perfect/hex flags, seed, and wall colors) through the UI.
+"""
+
 import os
 import random
 from dotenv import dotenv_values
@@ -9,7 +15,10 @@ BtnData: TypeAlias = list[tuple[str, str, Callable[[], None]]]
 
 
 class SettingsScene(BaseScene):
+    """Scene for interactively editing maze configuration settings."""
+
     def __init__(self, app: Any) -> None:
+        """Load config file values and build the settings UI."""
         super().__init__(app)
 
         self.config: dict[str, str | None] = dotenv_values(
@@ -22,7 +31,7 @@ class SettingsScene(BaseScene):
         self.setup_ui()
 
     def setup_ui(self) -> None:
-        """Create buttons with default values"""
+        """Create and position buttons for all configurable parameters."""
         self.view.clear_buttons()
 
         btn_data: BtnData = [
@@ -70,7 +79,7 @@ class SettingsScene(BaseScene):
         )
 
     def draw_bg(self) -> None:
-        """Render background depending on current step value"""
+        """Render the animated background gradient for this frame."""
         canvas: Any = self.view.layers.get("bg")
         height: int = self.app.window_height
         if self.bg_step == 2 * height:
@@ -87,7 +96,7 @@ class SettingsScene(BaseScene):
             canvas.fill_rect(0, y, canvas.width, 1, color)
 
     def _cmd_update_width(self) -> None:
-        """Rotate or reset os.environ width"""
+        """Cycle WIDTH between presets, or reset it when Ctrl is held."""
         picks: list[int] = [10, 25, 50, 75, 100, 150]
         try:
             if not hasattr(self, "pick_width"):
@@ -109,7 +118,7 @@ class SettingsScene(BaseScene):
             pass
 
     def _cmd_update_height(self) -> None:
-        """Rotate or reset os.environ height"""
+        """Cycle HEIGHT between presets, or reset it when Ctrl is held."""
         picks: list[int] = [10, 25, 50, 75, 100, 150]
         try:
             if not hasattr(self, "pick_height"):
@@ -131,7 +140,7 @@ class SettingsScene(BaseScene):
             pass
 
     def _cmd_update_entry(self) -> None:
-        """Randomize or reset os.environ entry"""
+        """Randomize ENTRY, or reset it when Ctrl is held."""
         try:
             if 65507 in self.app.keypresses:
                 config_entry: str | None = self.config.get("ENTRY")
@@ -165,7 +174,7 @@ class SettingsScene(BaseScene):
                 continue
 
     def _cmd_update_exit(self) -> None:
-        """Randomize or reset os.environ exit"""
+        """Randomize EXIT, or reset it when Ctrl is held."""
         try:
             if 65507 in self.app.keypresses:
                 config_exit: str | None = self.config.get("EXIT")
@@ -199,7 +208,7 @@ class SettingsScene(BaseScene):
                 continue
 
     def _cmd_update_perfect(self) -> None:
-        """Toggle or reset os.environ perfect"""
+        """Toggle PERFECT, or reset it when Ctrl is held."""
         try:
             if 65507 in self.app.keypresses:
                 config_perfect: str | None = self.config.get("PERFECT")
@@ -216,7 +225,7 @@ class SettingsScene(BaseScene):
             pass
 
     def _cmd_update_hex(self) -> None:
-        """Toggle or reset os.environ hex"""
+        """Toggle HEX mode, or reset it when Ctrl is held."""
         try:
             if 65507 in self.app.keypresses:
                 config_hex: str | None = self.config.get("HEX")
@@ -233,7 +242,7 @@ class SettingsScene(BaseScene):
             pass
 
     def _cmd_update_seed(self) -> None:
-        """Toggle or reset os.environ seed"""
+        """Set SEED to 'Random', or reset it when Ctrl is held."""
         try:
             if 65507 in self.app.keypresses:
                 config_seed: str | None = self.config.get("CONFIG_SEED")
@@ -247,14 +256,14 @@ class SettingsScene(BaseScene):
             pass
 
     def _cmd_update_wall_color(self) -> None:
-        """Randomize or reset maze walls color"""
+        """Randomize wall color, or reset it when Up is held."""
         if 65362 in self.app.keypresses:
             self.app.colors["walls"] = 0xFFFF006E
         else:
             self.app.colors["walls"] = random.randrange(0xFF000000, 0xFFFFFFFF)
 
     def update_height(self) -> None:
-        """Update height button label with os.environ value"""
+        """Update the HEIGHT button label and handle hover key adjustments."""
         btn: Any = self.view.buttons.get("height")
         try:
             if btn.is_hovered(*self.app.get_mouse_pos()):
@@ -273,7 +282,7 @@ class SettingsScene(BaseScene):
         btn.label = "Height:" + str(os.environ.get("HEIGHT", "None"))
 
     def update_width(self) -> None:
-        """Update width button label with os.environ value"""
+        """Update the WIDTH button label and handle hover key adjustments."""
         btn: Any = self.view.buttons.get("width")
         try:
             if btn.is_hovered(*self.app.get_mouse_pos()):
@@ -292,27 +301,27 @@ class SettingsScene(BaseScene):
         btn.label = "Width:" + os.environ.get("WIDTH", "None")
 
     def update_entry(self) -> None:
-        """Update entry button label with os.environ value"""
+        """Update the ENTRY button label."""
         btn: Any = self.view.buttons.get("entry")
         btn.label = "Entry:" + os.environ.get("ENTRY", "None")
 
     def update_exit(self) -> None:
-        """Update exit button label with os.environ value"""
+        """Update the EXIT button label."""
         btn: Any = self.view.buttons.get("exit")
         btn.label = "Exit:" + os.environ.get("EXIT", "None")
 
     def update_perfect(self) -> None:
-        """Update perfect button label with os.environ value"""
+        """Update the PERFECT button label."""
         btn: Any = self.view.buttons.get("perfect")
         btn.label = "Perfect:" + os.environ.get("PERFECT", "False")
 
     def update_hex(self) -> None:
-        """Update hex button label with os.environ value"""
+        """Update the HEX button label."""
         btn: Any = self.view.buttons.get("hex")
         btn.label = "Hex:" + os.environ.get("HEX", "False")
 
     def update_seed(self) -> None:
-        """Update seed button label with os.environ value"""
+        """Update the SEED button label and handle hover key adjustments."""
         btn: Any = self.view.buttons.get("seed")
         try:
             if btn.is_hovered(*self.app.get_mouse_pos()):
@@ -331,12 +340,12 @@ class SettingsScene(BaseScene):
         btn.label = "Seed:" + os.environ.get("SEED", "Random")
 
     def update_walls(self) -> None:
-        """Update walls button label with app colors value"""
+        """Update the wall-color button label."""
         btn: Any = self.view.buttons.get("walls")
         btn.label = "Walls:" + hex(self.app.colors.get("walls", 0) & 0xFFFFFF)
 
     def update(self) -> None:
-        """Update maze display depending on current values"""
+        """Update animations, labels, and apply pending user changes."""
         self.draw_bg()
         self.bg_step += 10
         self.update_height()
@@ -351,5 +360,5 @@ class SettingsScene(BaseScene):
         super().update()
 
     def render(self) -> None:
-        """Update current frame"""
+        """Render the settings frame."""
         super().render()

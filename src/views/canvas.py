@@ -1,7 +1,24 @@
+"""Low-level pixel buffer helpers for MiniLibX rendering.
+
+The :class:`~Canvas` class wraps an MLX image, exposes a byte-backed buffer,
+and provides basic drawing primitives (rectangles, pixels, and thick lines).
+"""
+
 from typing import Any
 
 
 class Canvas:
+    """An MLX image plus drawing helpers.
+
+    Args:
+        app: Application-like object exposing MLX pointers.
+        x: X position where the image is blitted in the window.
+        y: Y position where the image is blitted in the window.
+        z: Z-index used for layer compositing.
+        width: Image width in pixels.
+        height: Image height in pixels.
+    """
+
     def __init__(
         self, app: Any, x: int, y: int, z: int, width: int, height: int
     ) -> None:
@@ -24,7 +41,7 @@ class Canvas:
         self.clear()
 
     def get_color_bytes(self, color: int) -> bytes:
-        """Return bytes object from rgba color value"""
+        """Convert an RGBA int into bytes in the order expected by MLX."""
         b: int = color & 0xFF
         g: int = (color >> 8) & 0xFF
         r: int = (color >> 16) & 0xFF
@@ -35,7 +52,7 @@ class Canvas:
     def fill_rect(
         self, x: int, y: int, width: int, height: int, color: int
     ) -> None:
-        """Fill rectangle zone in memory buffer"""
+        """Fill a rectangular area in the backing buffer."""
         if not (
             0 <= x < self.width
             and 0 <= x + width <= self.width
@@ -52,7 +69,7 @@ class Canvas:
             self.buffer[start: (start + len(line_data))] = line_data
 
     def draw_pixel(self, x: int, y: int, pixel: bytes) -> None:
-        """Fill single pixel value in memory buffer"""
+        """Write a single pixel into the backing buffer."""
         if 0 <= x < self.width and 0 <= y < self.height:
             start = (y * self.size_line) + (x * self.bytes_per_pixel)
             self.buffer[start: (start + self.bytes_per_pixel)] = pixel
@@ -66,7 +83,7 @@ class Canvas:
         color: int,
         thickness: int = 1,
     ) -> None:
-        """Fill memory buffer with pixel values for a straight line"""
+        """Draw a straight line (optionally thick) into the backing buffer."""
         x0, y0, x1, y1 = int(x0), int(y0), int(x1), int(y1)
         dx, dy = abs(x1 - x0), abs(y1 - y0)
         sx, sy = 1 if x0 < x1 else -1, 1 if y0 < y1 else -1
@@ -97,13 +114,16 @@ class Canvas:
                 y0 += sy
 
     def clear(self) -> None:
-        """Fill memory buffer with 0s"""
+        """Clear the image buffer.
+
+        The buffer is filled with zeros (transparent black).
+        """
         self.buffer[:] = bytes([0]) * (
             self.width * self.height * self.bytes_per_pixel
         )
 
     def destroy(self) -> None:
-        """Destroy Mlx memory image and set pointer to None"""
+        """Destroy the underlying MLX image."""
         if self.ptr:
             self.app.mlx.mlx_destroy_image(self.app.mlx_ptr, self.ptr)
             self.ptr = None

@@ -1,3 +1,9 @@
+"""Rendering helpers built on top of MiniLibX.
+
+Renderers manage screen layers (as :class:`~src.views.canvas.Canvas`
+instances), draw text and UI widgets, and composite layers onto the window.
+"""
+
 import os
 import sys
 from src.views.ui_components import Button
@@ -8,7 +14,15 @@ FontsDict: TypeAlias = dict[str, list[list[int]]]
 
 
 class BaseRenderer:
+    """Base renderer shared by square and hex renderers.
+
+    Args:
+        app: Application instance (owns the MLX window and shared colors).
+        model: Scene model instance.
+    """
+
     def __init__(self, app: Any, model: Any) -> None:
+        """Initialize layers, UI theme defaults, and font assets."""
         self.app: Any = app
         self.model: Any = model
         self.pad_w: int = 40
@@ -55,7 +69,14 @@ class BaseRenderer:
 
     @staticmethod
     def parse_fonts(fonts_dir: str) -> FontsDict:
-        """Parse fonts from font fils and return them as a dict"""
+        """Parse bitmap fonts stored as hex digits in files.
+
+        Args:
+            fonts_dir: Directory containing one file per character code.
+
+        Returns:
+            A mapping from character to a 2D bitmap (list of rows of ints).
+        """
         fonts_dict: FontsDict = {}
         files: list[str] = os.listdir(fonts_dir)
 
@@ -77,19 +98,19 @@ class BaseRenderer:
     def create_canvas(
         self, x: int, y: int, z: int, width: int, height: int
     ) -> Canvas:
-        """Create and return a canvas"""
+        """Create and return a new :class:`~src.views.canvas.Canvas`."""
         return Canvas(self.app, x, y, z, width, height)
 
     def add_layer(
         self, name: str, x: int, y: int, z: int, width: int, height: int
     ) -> Canvas:
-        """Create a canvas and add it to self.layers dict"""
+        """Create a canvas and store it in :attr:`layers` under *name*."""
         canvas = self.create_canvas(x, y, z, width, height)
         self.layers.update({name: canvas})
         return canvas
 
     def clear_layers(self, *names: str) -> None:
-        """Clear a list of layers fetched by name"""
+        """Clear all layers or only selected layers by name."""
         if not names:
             for lay in self.layers.values():
                 lay.clear()
@@ -100,7 +121,10 @@ class BaseRenderer:
                     layer.clear()
 
     def delete_layers(self, *names: str) -> None:
-        """Delete a list of layers fetched by name from self.layers"""
+        """Destroy and remove layers.
+
+        If *names* is empty, all layers are removed.
+        """
         to_delete: list[str] = []
 
         if not names:
@@ -119,7 +143,7 @@ class BaseRenderer:
     def get_gradient_color(
         self, color_1: int, color_2: int, mix: float
     ) -> int:
-        """Return a mix between two colors"""
+        """Return the linear interpolation of two RGBA colors."""
         alpha_1: int = (color_1 >> 24) & 0xFF
         red_1: int = (color_1 >> 16) & 0xFF
         green_1: int = (color_1 >> 8) & 0xFF
@@ -148,12 +172,12 @@ class BaseRenderer:
         height: int,
         action: Callable[[], None],
     ) -> None:
-        """Create and add a button to self.buttons"""
+        """Create and add a :class:`~src.views.ui_components.Button`."""
         button: Button = Button(label, x, y, z, width, height, action)
         self.buttons.update({name: button})
 
     def clear_buttons(self, *buttons: str) -> None:
-        """Remove buttons by name from self.buttons"""
+        """Remove all buttons or selected buttons by name."""
         if not buttons:
             self.buttons.clear()
             return
@@ -162,7 +186,7 @@ class BaseRenderer:
             self.buttons.pop(button)
 
     def draw_button(self, canvas: Canvas, btn: Button) -> None:
-        """Draw a button to a canvas"""
+        """Draw a button (background, border, and label) onto a canvas."""
         theme: dict[str, int] = self.ui_style
         bw: int = theme.get("border_weight", 1)
 
@@ -209,7 +233,7 @@ class BaseRenderer:
         )
 
     def redraw_ui(self) -> None:
-        """Clear ui canvas and redraw all buttons"""
+        """Clear the UI layer and redraw all buttons."""
         canvas: Any = self.layers.get("ui")
         canvas.clear()
         for button in self.buttons.values():
@@ -224,7 +248,7 @@ class BaseRenderer:
         color: int,
         scale: int | None = None,
     ) -> None:
-        """Draw text to a canvas"""
+        """Draw text using the loaded bitmap font."""
         char_offset: int = 0
         font_scale: int = (
             scale if scale is not None else self.ui_style.get("font_scale", 1)
@@ -250,7 +274,7 @@ class BaseRenderer:
             char_offset += (self.font_width + 1) * font_scale
 
     def refresh_layers(self) -> None:
-        """Refresh layers im z_index order"""
+        """Composite layers onto the window in ascending z-index order."""
         self.app.mlx.mlx_clear_window(self.app.mlx_ptr, self.app.win_ptr)
         for layer in sorted(
             self.layers.values(),

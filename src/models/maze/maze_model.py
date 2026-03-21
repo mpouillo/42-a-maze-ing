@@ -16,9 +16,15 @@ StepGenerator: TypeAlias = Generator[
 
 
 class MazeGenerator:
-    """Main controller for maze generation and solving."""
+    """High-level maze generation and solving orchestrator.
+
+    This class selects the appropriate generation strategy (square vs hex),
+    produces the maze, computes solution paths, and delegates persistence to
+    :class:`~src.models.maze.file_manager.MazeFileManager`.
+    """
 
     def __init__(self) -> None:
+        """Load configuration, select a generator, and initialize the maze."""
         try:
             self.config = MazeConfig.from_env()
         except Exception as e:

@@ -49,7 +49,10 @@ class SqrGenerator:
         )
 
     def set_logo_as_visited(self) -> None:
-        """Mark logo area as visited so the maze generates around it"""
+        """Mark the embedded logo area as visited.
+
+        This forces generation and solving logic to route around the logo.
+        """
         current_dir = os.path.dirname(os.path.abspath(__file__))
         logo_path = os.path.join(current_dir, "logo")
 
@@ -73,7 +76,7 @@ class SqrGenerator:
     def get_unvisited_neighbors(
         self, cell: Tuple[int, int]
     ) -> List[Tuple[int, int]]:
-        """Return list of valid unvisited neighbors"""
+        """Return valid unvisited neighbors of a cell."""
         row, col = cell
         neighbors = []
 
@@ -95,7 +98,7 @@ class SqrGenerator:
     def remove_wall(
         self, current: Tuple[int, int], next_cell: Tuple[int, int]
     ) -> None:
-        """Remove walls between two adjacent cells"""
+        """Remove walls between two adjacent square cells."""
         cr, cc = current
         nr, nc = next_cell
 
@@ -142,6 +145,7 @@ class SqrGenerator:
                 yield self.maze, ("remove", curr_cell, next_cell)
 
     def generate(self) -> np.ndarray[Any, Any]:
+        """Generate a full maze and return the resulting grid."""
         for _ in self.generate_steps():
             pass
         return self.maze
@@ -149,7 +153,7 @@ class SqrGenerator:
     def count_walls(
         self, row: int, col: int, maze: np.ndarray[Any, Any]
     ) -> int:
-        """Count how many walls a specific cell has"""
+        """Count the number of closed walls for a given cell."""
         cell_val = maze[row, col]
         count = 0
         if cell_val & self.TOP:
@@ -165,7 +169,7 @@ class SqrGenerator:
     def close_deadend(
         self, maze: np.ndarray[Any, Any], row: int, col: int
     ) -> Generator[Tuple[np.ndarray[Any, Any], Tuple[int, int]], None, None]:
-        """Fill a deadend by adding a wall to the only open side"""
+        """Fill a dead-end corridor by closing its only open side."""
         next_cell = (row, col)
         while (
             next_cell != self.config.entry
@@ -203,8 +207,10 @@ class SqrGenerator:
     def solve_deadends_steps(
         self,
     ) -> Generator[Tuple[np.ndarray[Any, Any], Tuple[int, int]], None, None]:
-        """
-        Removes dead ends to find the solution.
+        """Yield intermediate states while pruning dead ends.
+
+        This produces a maze where the remaining open corridors correspond to a
+        solution skeleton.
         """
         maze = self.maze.copy()
 
@@ -230,9 +236,7 @@ class SqrGenerator:
                 break
 
     def solve_deadends(self) -> np.ndarray[Any, Any]:
-        """
-        Removes dead ends to find the solution.
-        """
+        """Return a maze copy with dead ends removed."""
         last_maze = self.maze.copy()
         for maze_state, _ in self.solve_deadends_steps():
             last_maze = maze_state
@@ -241,6 +245,7 @@ class SqrGenerator:
     def add_paths_steps(
         self, solved: np.ndarray[Any, Any], solution_str_len: int
     ) -> Generator[Any, None, None]:
+        """Yield steps while adding extra paths to make a non-perfect maze."""
         row, col = self.config.entry
 
         solve_size = max(0, solution_str_len)
@@ -290,6 +295,7 @@ class SqrGenerator:
     def add_paths(
         self, solved: np.ndarray[Any, Any], solution_str_len: int
     ) -> np.ndarray[Any, Any]:
+        """Add extra paths to the maze and return the modified grid."""
         for _ in self.add_paths_steps(solved, solution_str_len):
             pass
         return self.maze
@@ -299,6 +305,7 @@ class SqrGenerator:
         solved: np.ndarray[Any, Any],
         cell: Tuple[int, int],
     ) -> Optional[Tuple[int, int]]:
+        """Return a neighboring cell that is currently blocked by a wall."""
         row, col = cell
 
         def ok(r: int, c: int) -> bool:
@@ -327,6 +334,7 @@ class SqrGenerator:
         return candidates[randint(0, len(candidates) - 1)]
 
     def get_neighbors_open(self, cell: Tuple[int, int]) -> list[Any]:
+        """Return neighbors reachable from *cell* in the current maze."""
         r, c = cell
         neighbors: List[Tuple[int, int]] = []
 
@@ -342,6 +350,10 @@ class SqrGenerator:
         return neighbors
 
     def bfs(self, max_paths: int = 999) -> StepGenerator:
+        """Enumerate paths from entry to exit using BFS.
+
+        Yields exploration steps as (command, current_cell, next_cell).
+        """
         self.initialize_visited()
         self.set_logo_as_visited()
         self.bfs_paths = []
@@ -368,6 +380,7 @@ class SqrGenerator:
     def get_neighbors_open_opti(
         self, cell: Tuple[int, int], maze: np.ndarray[Any, Any]
     ) -> list[Any]:
+        """Return open neighbors for a given cell in the provided maze grid."""
         r, c = cell
         neighbors: List[Tuple[int, int]] = []
 
@@ -388,6 +401,10 @@ class SqrGenerator:
         )
 
     def bfs_opti(self) -> StepGenerator:
+        """Run multi-path search on the dead-end-solved maze.
+
+        Yields the exploration steps.
+        """
         self.initialize_visited()
         self.set_logo_as_visited()
         self.bfs_paths = []
@@ -401,6 +418,19 @@ class SqrGenerator:
         maze: np.ndarray[Any, Any],
         out_path: List[List[Tuple[int, int]]],
     ) -> Generator[Any, None, None]:
+        """Run A* to find a shortest path and yield exploration steps.
+
+        This variant stores the discovered solution in *out_path* when the exit
+        is reached.
+
+        Args:
+            maze: Maze grid to traverse.
+            out_path: Output list that will receive the path as a list of
+                ``(row, col)`` coordinates.
+
+        Yields:
+            Step tuples used for animation, typically ``("fill", cur, nxt)``.
+        """
         exit_ = self.config.exit
         start = self.config.entry
 
@@ -444,6 +474,18 @@ class SqrGenerator:
         maze: np.ndarray[Any, Any],
         out_path: List[List[Tuple[int, int]]],
     ) -> Generator[Any, None, None]:
+        """Run a "longest" path search and yield exploration steps.
+
+        This uses a best-first search biased toward longer paths (by pushing
+        negative g-cost) and stores the resulting path in *out_path*.
+
+        Args:
+            maze: Maze grid to traverse.
+            out_path: Output list receiving the selected path.
+
+        Yields:
+            Step tuples used for animation.
+        """
         exit_ = self.config.exit
         start = self.config.entry
 
@@ -486,6 +528,20 @@ class SqrGenerator:
         exclude: Set[Tuple[Tuple[int, int], ...]],
         out_path: List[List[Tuple[int, int]]],
     ) -> Generator[Any, None, None]:
+        """Search for a path whose length is close to *target_len*.
+
+        The search explores candidates and keeps the best path whose length
+        deviates the least from *target_len*, skipping any path in *exclude*.
+
+        Args:
+            maze: Maze grid to traverse.
+            target_len: Desired path length.
+            exclude: Set of paths (as tuples of coordinates) to ignore.
+            out_path: Output list receiving the best path found.
+
+        Yields:
+            Step tuples for visualization.
+        """
         exit_ = self.config.exit
         start = self.config.entry
 
@@ -545,6 +601,19 @@ class SqrGenerator:
         self,
         maze: np.ndarray[Any, Any],
     ) -> Generator[Any, None, None]:
+        """Populate :attr:`bfs_paths` with several representative valid paths.
+
+        This method computes:
+        - a first shortest path,
+        - a longest path candidate,
+        - and a few intermediate-length paths.
+
+        Args:
+            maze: Maze grid to traverse.
+
+        Yields:
+            Step tuples for visualization while searching.
+        """
         self.bfs_paths = []
         exclude: Set[Tuple[Tuple[int, int], ...]] = set()
         first = None

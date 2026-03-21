@@ -19,9 +19,16 @@ class MazeConfig:
 
     @staticmethod
     def from_env() -> "MazeConfig":
-        """
-        create a MazeConfig instance from a .env file.
-        Performs all validation logic before creating the object.
+        """Create a :class:`~MazeConfig` instance from environment variables.
+
+        The application loads its configuration into ``os.environ`` (typically
+        from a config file). This method validates and converts those values.
+
+        Returns:
+            A validated :class:`~MazeConfig`.
+
+        Raises:
+            ValueError: If the environment variables are missing or invalid.
         """
 
         # 1. Dimensions

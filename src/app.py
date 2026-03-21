@@ -1,3 +1,9 @@
+"""MiniLibX application entrypoint.
+
+This module defines the :class:`~Application` class which owns the MLX window,
+input handling, and the scene loop.
+"""
+
 import os
 import sys
 import time
@@ -49,7 +55,7 @@ class Application:
         self.current_scene: Any = MenuScene(self)
 
     def run(self) -> None:
-        """Start Mlx hooks"""
+        """Start MLX event hooks and enter the main loop."""
         self.mlx.mlx_do_key_autorepeatoff(self.mlx_ptr)
         self.mlx.mlx_hook(self.win_ptr, 2, 1 << 0, self.handle_keydown, None)
         self.mlx.mlx_hook(self.win_ptr, 3, 1 << 1, self.handle_keyup, None)
@@ -59,26 +65,26 @@ class Application:
         self.mlx.mlx_loop(self.mlx_ptr)
 
     def handle_keydown(self, keycode: int, param: Any) -> None:
-        """Add keycode to keypresses set"""
+        """Register a pressed key."""
         self.keypresses.add(keycode)
 
     def handle_keyup(self, keycode: int, param: Any) -> None:
-        """Remove keycode from keypress set"""
+        """Unregister a released key."""
         if keycode in self.keypresses:
             self.keypresses.remove(keycode)
 
     def key_actions(self) -> None:
-        """Execute actions if matching keypress detected"""
+        """Run global key actions that apply in any scene."""
         if 65307 in self.keypresses:  # Escape
             self.close_window()
 
     def get_mouse_pos(self) -> tuple[int, int]:
-        """Return current mouse position as tuple"""
+        """Return the current mouse position as ``(x, y)``."""
         _, mouse_x, mouse_y = self.mlx.mlx_mouse_get_pos(self.win_ptr)
         return (mouse_x, mouse_y)
 
     def handle_mouse(self, click: int, x: int, y: int, param: Any) -> None:
-        """On click, check for hovered button and execute action"""
+        """Handle mouse clicks by dispatching to hovered enabled buttons."""
         if click != 1:
             return
 
@@ -89,7 +95,7 @@ class Application:
                     return
 
     def close_window(self, param: Any = None) -> None:
-        """Kill Mlx hooks and exit program"""
+        """Tear down MLX resources and exit the process."""
         self.mlx.mlx_do_key_autorepeaton(self.mlx_ptr)
         self.mlx.mlx_do_sync(self.mlx_ptr)
         self.mlx.mlx_release(self.mlx_ptr)
@@ -99,7 +105,11 @@ class Application:
 
     @staticmethod
     def validate_config() -> None:
-        """Raise ValueError in case of config error"""
+        """Validate required environment configuration.
+
+        Raises:
+            ValueError: If any required key is missing or invalid.
+        """
         REQ_KEYS: list[str] = [
             "WIDTH",
             "HEIGHT",
@@ -224,7 +234,7 @@ class Application:
                 )
 
     def update_window(self, param: Any) -> None:
-        """Execute scene updates and rendering functions"""
+        """Advance the scene state and render it at the target FPS."""
         self.key_actions()
 
         cur_frame: float = time.time()

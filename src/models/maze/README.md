@@ -1,7 +1,7 @@
 ## MazeGenerator Documentation
 
 The MazeGenerator class is a standalone module that can be imported and used in any project.<br>
-The package is available as `mazegen-1.0.0-py3-none-any.whl` at the root of the project files and can also be recreated by doing `make build_pkg`
+The package is available as `mazegen-1.0.0-py3-none-any.whl` at the root of the project files and can also be recreated by doing `make build`.
 
 It's the main interface for creating, solving, and managing mazes. It can generate both square and hexagonal mazes, find solutions, and save the results.
 
@@ -21,16 +21,17 @@ Here is a basic example of how to generate a 10x10 square maze and save it.
 
 ```python
 import os
-from src.models.maze import MazeGenerator
+import sys
+from mazegen import MazeGenerator
 
 # --- 1. Set up configuration ---
 # The generator reads these from the environment.
-os.environ['WIDTH'] = '10'
-os.environ['HEIGHT'] = '10'
+os.environ['WIDTH'] = '20'
+os.environ['HEIGHT'] = '20'
 os.environ['ENTRY'] = '0,0'
-os.environ['EXIT'] = '9,9'
+os.environ['EXIT'] = '19,19'
 os.environ['PERFECT'] = 'True'
-os.environ['OUTPUT_FILE'] = 'my_maze.txt'
+os.environ['OUTPUT_FILE'] = 'maze.txt'
 
 # --- 2. Instantiate the generator ---
 # This will automatically load the configuration from the environment.
@@ -38,7 +39,7 @@ try:
     maze_generator = MazeGenerator()
 except ValueError as e:
     print(f"Error initializing generator: {e}")
-    exit()
+    sys.exit(1)
 
 # --- 3. Generate the maze ---
 # This populates the maze data and saves it to the output file.
@@ -56,8 +57,19 @@ After calling `generate_new_maze()`, you can access the generated maze structure
 The maze is stored as a NumPy array where each cell is an integer representing its walls.
 
 -   **`maze_generator.maze`**: A `numpy.ndarray` representing the final maze structure.
-    -   For square mazes, walls are represented by a 4-bit integer (`NESW`).
+    -   For square mazes, walls are represented by a 4-bit integer (`NESW`):
+        - WEST = 1 (2⁰)
+        - SOUTH = 2 (2¹)
+        - EAST = 4 (2²)
+        - NORTH = 8 (2³)
+
     -   For hexagonal mazes, walls are represented by a 6-bit integer.
+        - TOP_RIGHT = 1 (2⁰)
+        - RIGHT = 2 (2¹)
+        - BOTTOM_RIGHT = 4 (2²)
+        - BOTTOM_LEFT = 8 (2³)
+        - LEFT = 16 (2⁴)
+        - TOP_LEFT = 32 (2⁵)
 
 ```python
 # Access the generated maze grid
@@ -66,7 +78,6 @@ print("Generated Maze Grid (first 5 rows):")
 print(maze_grid[:5])
 ```
 
-// ...existing code...
 #### Accessing Solutions
 
 The generator finds one or more valid paths from the entry to the exit.
@@ -83,9 +94,6 @@ if maze_generator.valid_paths:
     print(f"\nFound {len(maze_generator.valid_paths)} solution(s).")
     print(f"Shortest path has {len(shortest_path_coords)} steps.")
 
-    # The save_solution method converts the coordinate path into a 
-    # directional string and appends it to the output file.
-    maze_generator.save_solution(shortest_path_coords)
     print(f"Shortest solution saved to {maze_generator.output_file}.")
 else:
     print("No solution was found.")

@@ -1,3 +1,5 @@
+"""Hex-grid maze renderer."""
+
 import math
 from src.views.renderers import BaseRenderer
 from src.views import Canvas
@@ -8,7 +10,10 @@ StepTuple: TypeAlias = tuple[str, CoordTuple, CoordTuple]
 
 
 class HexRenderer(BaseRenderer):
+    """Renderer that draws a hexagonal (6-neighbor) maze."""
+
     def __init__(self, app: Any, model: Any) -> None:
+        """Initialize layers used to draw maze, path, and endpoints."""
         super().__init__(app, model)
 
         self.wall_size: int = 4
@@ -31,7 +36,7 @@ class HexRenderer(BaseRenderer):
         )
 
     def compute_scales(self) -> None:
-        """Calculate required sizes for maze display"""
+        """Compute hex geometry and offsets to fit the maze into the window."""
         available_w: int = (
             self.app.window_width - self.pad_w * 2 - self.wall_size
         )
@@ -61,7 +66,7 @@ class HexRenderer(BaseRenderer):
         self.offset_y: int = (self.app.window_height - self.maze_h) // 2
 
     def draw_maze(self) -> None:
-        """render maze to maze layer"""
+        """Render maze cells and walls to the maze layer."""
         wall_color: int = self.app.colors.get("walls")
         cell_color: int = self.app.colors.get("cell")
         canvas: Any = self.layers.get("maze")
@@ -76,7 +81,7 @@ class HexRenderer(BaseRenderer):
                 self.draw_cell_walls(canvas, x, y, value, wall_color)
 
     def draw_path(self, path: list[CoordTuple]) -> None:
-        """Render path to path layer"""
+        """Render a path overlay to the path layer."""
         color_start: int = self.app.colors.get("path_1")
         color_end: int = self.app.colors.get("path_2")
         canvas: Any = self.layers.get("path")
@@ -96,7 +101,7 @@ class HexRenderer(BaseRenderer):
             self.draw_cell_walls(canvas, x1, y1, wall, color)
 
     def draw_step(self, step_data: StepTuple) -> None:
-        """Render step to either path or maze layer"""
+        """Render a single generation/solve step to the appropriate layer."""
         step_color: int = self.app.colors.get("step")
         cmd, (y1, x1), (y2, x2) = step_data
 
@@ -129,7 +134,7 @@ class HexRenderer(BaseRenderer):
         self.prev_gen = (x2, y2)
 
     def draw_endpoints(self) -> None:
-        """Draw entry and exit to endpoints layer"""
+        """Draw entry and exit markers on the endpoints layer."""
         canvas: Any = self.layers.get("endpoints")
         self.draw_cell_center(
             canvas,
@@ -145,6 +150,7 @@ class HexRenderer(BaseRenderer):
         )
 
     def get_center(self, x: int, y: int) -> CoordTuple:
+        """Return pixel coordinates of the hex center for a given cell."""
         cx: float = (
             x * self.hex_w
             + (self.hex_w / 2 if y % 2 == 1 else 0)
@@ -155,7 +161,7 @@ class HexRenderer(BaseRenderer):
         return round(cx), round(cy)
 
     def get_wall_direction(self, y1: int, x1: int, y2: int, x2: int) -> int:
-        """Return value for wall separating two cells depending on the row"""
+        """Return the wall bitmask separating two adjacent cells."""
         is_odd: int = y1 % 2 != 0
         dy, dx = y2 - y1, x2 - x1
 
@@ -181,7 +187,7 @@ class HexRenderer(BaseRenderer):
     def draw_cell_center(
         self, canvas: Canvas, x: int, y: int, color: int = 0xFF000000
     ) -> None:
-        """Draw square center of cell to canvas"""
+        """Draw the interior fill of a hex cell."""
         cx, cy = self.get_center(x, y)
         s: int = self.cell_size - self.wall_size // 2
         if s <= 0:
@@ -207,7 +213,7 @@ class HexRenderer(BaseRenderer):
         value: int = 0,
         color: int = 0xFF000000,
     ) -> None:
-        """Draw walls of cell to canvas"""
+        """Draw the walls around a hex cell."""
         cx, cy = self.get_center(x, y)
         s: int = self.cell_size
         w: int = round(math.sqrt(3) * s / 2)
