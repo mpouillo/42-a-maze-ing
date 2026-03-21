@@ -113,7 +113,7 @@ build:
 	@echo "Building the mazegen package..."
 	@$(ENV_PYTHON) -m pip install build
 	@$(ENV_PYTHON) -m build --wheel --outdir .
-	@rm -rf build/ src/models/*.egg-info
+	@rm -rf build/ *.egg-info
 
 run:
 	@if [ -f "$(ENV_PYTHON)" ]; then \
