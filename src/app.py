@@ -116,13 +116,13 @@ class Application:
         # Getting logo data to check endpoints position
         logo_data: list[str] | None = None
         try:
-            with open("src/models/maze/logo.txt", "r") as f:
+            with open("src/models/maze/logo", "r") as f:
                 logo_data = [
                     line for line in f.read().splitlines() if line.strip()
                 ]
         except Exception:
             raise ValueError(
-                "Error reading logo data." "Do you have permissions?"
+                "Error reading logo data. Do you have permissions?"
             )
         if logo_data:
             logo_h: int = len(logo_data)
