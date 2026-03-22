@@ -192,7 +192,7 @@ You can also save a specific solution path directly to the output file.
 # Get the shortest solution path
 if maze_generator.valid_paths:
     shortest_path_coords = maze_generator.valid_paths[0]
-    
+
     print(f"\nFound {len(maze_generator.valid_paths)} solution(s).")
     print(f"Shortest path has {len(shortest_path_coords)} steps.")
 
@@ -243,7 +243,11 @@ Besides MiniLibX, no external tools were used.
 
 ### Resources
 
+- [Project link](https://projects.intra.42.fr/projects/a-maze-ing) (requires access to the 42 intra)
 - Included MLX man documentation
 - [Unofficial MLX docs](https://harm-smits.github.io/42docs/libs/minilibx)
 - [XLIB mask documentation (for MLX hooks)](https://tronche.com/gui/x/xlib/events/mask.html)
-- AI was used to help structure the project (especially the MVC structure) and assist with adapting the square maze display into a hexagonal display.
+- AI was used to
+    - help structure the project (especially the MVC structure)
+    - assist with adapting the square maze display into a hexagonal display
+    - create docstrings for all classes, methods and functions
