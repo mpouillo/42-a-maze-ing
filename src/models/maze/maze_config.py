@@ -5,6 +5,13 @@ import os
 from typing import Optional, Tuple
 
 
+def to_bool(name: str, default: bool = False) -> bool:
+    raw = os.environ.get(name)
+    if raw is None:
+        return default
+    return raw.lower() in {"1", "true"}
+
+
 @dataclass
 class MazeConfig:
     """Validated maze parameters."""
@@ -152,14 +159,17 @@ class MazeConfig:
         width = int(os.environ.get("WIDTH", 0))
         entry_part = os.environ.get("ENTRY", "0,0").split(",")
         entry_point = (int(entry_part[0]), int(entry_part[1]))
+
         exit_parts = os.environ.get("EXIT", "0,0").strip().split(",")
         exit_point = (int(exit_parts[0]), int(exit_parts[1]))
+
         seed_val = None
         seed_str = os.environ.get("SEED")
-        if seed_str and seed_str.lower() != "random":
+        if seed_str and seed_str.strip().lower() != "random":
             seed_val = int(seed_str)
-        perfect = bool(os.environ.get("PERFECT", 0))
-        is_hex = bool(os.environ.get("HEX", 0))
+
+        perfect = to_bool("PERFECT", False)
+        is_hex = to_bool("HEX", False)
 
         return MazeConfig(
             height=height,
