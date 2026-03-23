@@ -146,11 +146,10 @@ class MazeConfig:
                     "Seed should be None, 'Random', or a valid integer"
                 )
 
-
     @staticmethod
     def from_env() -> "MazeConfig":
-        height=int(os.environ.get("HEIGHT", 0))
-        width=int(os.environ.get("WIDTH", 0))
+        height = int(os.environ.get("HEIGHT", 0))
+        width = int(os.environ.get("WIDTH", 0))
         entry_part = os.environ.get("ENTRY", "0,0").split(",")
         entry_point = (int(entry_part[0]), int(entry_part[1]))
         exit_parts = os.environ.get("EXIT", "0,0").strip().split(",")
@@ -159,7 +158,6 @@ class MazeConfig:
         seed_str = os.environ.get("SEED")
         if seed_str and seed_str.lower() != "random":
             seed_val = int(seed_str)
-        
         perfect = bool(os.environ.get("PERFECT", 0))
         is_hex = bool(os.environ.get("HEX", 0))
 

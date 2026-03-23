@@ -217,7 +217,8 @@ class SettingsScene(BaseScene):
                 else:
                     os.environ["PERFECT"] = "None"
                 return
-            if os.environ.get("PERFECT") in [True, "True", "true", 1, "1"]:
+            value: str | None = os.environ.get("PERFECT")
+            if isinstance(value, str) and value.lower() in ["true", "1"]:
                 os.environ["PERFECT"] = "False"
             else:
                 os.environ["PERFECT"] = "True"
@@ -234,7 +235,8 @@ class SettingsScene(BaseScene):
                 else:
                     os.environ["HEX"] = "None"
                 return
-            if os.environ.get("HEX") in [True, "True", "true", 1, "1"]:
+            value: str | None = os.environ.get("HEX")
+            if isinstance(value, str) and value.lower() in ["true", "1"]:
                 os.environ["HEX"] = "False"
             else:
                 os.environ["HEX"] = "True"
