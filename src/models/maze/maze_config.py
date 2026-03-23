@@ -2,6 +2,7 @@
 
 from dataclasses import dataclass
 import os
+from pathlib import Path
 from typing import Optional, Tuple
 
 
@@ -46,14 +47,15 @@ class MazeConfig:
 
         # Getting logo data to check endpoints position
         logo_data: list[str] | None = None
+        logo_path = Path(__file__).parent.resolve().joinpath(Path("logo"))
         try:
-            with open("src/models/maze/logo", "r") as f:
+            with open(logo_path, "r") as f:
                 logo_data = [
                     line for line in f.read().splitlines() if line.strip()
                 ]
         except Exception:
             raise ValueError(
-                "Error reading logo data. Do you have permissions?"
+                "Error reading logo data"
             )
         if logo_data:
             logo_h: int = len(logo_data)
@@ -157,9 +159,9 @@ class MazeConfig:
     def from_env() -> "MazeConfig":
         height = int(os.environ.get("HEIGHT", 0))
         width = int(os.environ.get("WIDTH", 0))
+
         entry_part = os.environ.get("ENTRY", "0,0").split(",")
         entry_point = (int(entry_part[0]), int(entry_part[1]))
-
         exit_parts = os.environ.get("EXIT", "0,0").strip().split(",")
         exit_point = (int(exit_parts[0]), int(exit_parts[1]))
 
