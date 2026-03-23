@@ -47,7 +47,12 @@ class MazeConfig:
         # Getting logo data to check endpoints position
         logo_data: list[str] | None = None
         try:
-            with open("src/models/maze/logo", "r") as f:
+            current_dir = os.path.dirname(os.path.abspath(__file__))
+            logo_path = os.path.join(current_dir, "logo")
+
+            if not os.path.exists(logo_path):
+                return
+            with open(logo_path, "r") as f:
                 logo_data = [
                     line for line in f.read().splitlines() if line.strip()
                 ]

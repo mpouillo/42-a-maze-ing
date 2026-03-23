@@ -19,3 +19,6 @@ dependencies = [
 [tool.setuptools]
 packages = ["mazegen"]
 package-dir = {"mazegen" = "src/models/maze"}
+
+[tool.setuptools.package-data]
+mazegen = ["logo"]
