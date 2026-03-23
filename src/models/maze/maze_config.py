@@ -48,6 +48,9 @@ class MazeConfig:
         # Getting logo data to check endpoints position
         logo_data: list[str] | None = None
         logo_path = Path(__file__).parent.resolve().joinpath(Path("logo"))
+        if not logo_path.exists():
+            raise ValueError("Logo file not found")
+
         try:
             with open(logo_path, "r") as f:
                 logo_data = [

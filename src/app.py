@@ -8,6 +8,7 @@ import os
 import sys
 import time
 from mlx import Mlx
+from pathlib import Path
 from src.scenes import MenuScene
 from typing import Any
 
@@ -125,6 +126,10 @@ class Application:
 
         # Getting logo data to check endpoints position
         logo_data: list[str] | None = None
+        logo_path = Path("src/models/maze/logo")
+        if not logo_path.exists():
+            raise ValueError("Logo file not found")
+
         try:
             with open("src/models/maze/logo", "r") as f:
                 logo_data = [
