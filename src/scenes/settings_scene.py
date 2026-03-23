@@ -101,19 +101,18 @@ class SettingsScene(BaseScene):
         try:
             if not hasattr(self, "pick_width"):
                 self.pick_width: int = 0
-            else:
-                if 65507 in self.app.keypresses:
-                    config_width: str | None = self.config.get("WIDTH")
-                    if config_width:
-                        os.environ["WIDTH"] = config_width
-                    else:
-                        os.environ["WIDTH"] = "None"
-                    return
+            if 65507 in self.app.keypresses:
+                self.pick_width = 0
+                config_width: str | None = self.config.get("WIDTH")
+                if config_width:
+                    os.environ["WIDTH"] = config_width
                 else:
-                    self.pick_width += 1
+                    os.environ["WIDTH"] = "None"
+            else:
+                os.environ["WIDTH"] = str(picks[self.pick_width])
+                self.pick_width += 1
                 if self.pick_width >= len(picks):
                     self.pick_width = 0
-            os.environ["WIDTH"] = str(picks[self.pick_width])
         except Exception:
             pass
 
@@ -123,19 +122,18 @@ class SettingsScene(BaseScene):
         try:
             if not hasattr(self, "pick_height"):
                 self.pick_height: int = 0
-            else:
-                if 65507 in self.app.keypresses:
-                    config_height: str | None = self.config.get("HEIGHT")
-                    if config_height:
-                        os.environ["HEIGHT"] = config_height
-                    else:
-                        os.environ["HEIGHT"] = "None"
-                    return
+            if 65507 in self.app.keypresses:
+                self.pick_height = 0
+                config_height: str | None = self.config.get("HEIGHT")
+                if config_height:
+                    os.environ["HEIGHT"] = config_height
                 else:
-                    self.pick_height += 1
+                    os.environ["HEIGHT"] = "None"
+            else:
+                os.environ["HEIGHT"] = str(picks[self.pick_height])
+                self.pick_height += 1
                 if self.pick_height >= len(picks):
                     self.pick_height = 0
-            os.environ["HEIGHT"] = str(picks[self.pick_height])
         except Exception:
             pass
 
@@ -233,7 +231,7 @@ class SettingsScene(BaseScene):
                 if config_hex:
                     os.environ["HEX"] = config_hex
                 else:
-                    os.environ["HEX"] = "None"
+                    os.environ["HEX"] = "False"
                 return
             value: str | None = os.environ.get("HEX")
             if isinstance(value, str) and value.lower() in ["true", "1"]:
@@ -247,11 +245,11 @@ class SettingsScene(BaseScene):
         """Set SEED to 'Random', or reset it when Ctrl is held."""
         try:
             if 65507 in self.app.keypresses:
-                config_seed: str | None = self.config.get("CONFIG_SEED")
+                config_seed: str | None = self.config.get("SEED")
                 if config_seed:
-                    os.environ["CONFIG_SEED"] = config_seed
+                    os.environ["SEED"] = config_seed
                 else:
-                    os.environ["CONFIG_SEED"] = "None"
+                    os.environ["SEED"] = "Random"
                 return
             os.environ["SEED"] = "Random"
         except Exception:
@@ -259,8 +257,8 @@ class SettingsScene(BaseScene):
 
     def _cmd_update_wall_color(self) -> None:
         """Randomize wall color, or reset it when Up is held."""
-        if 65362 in self.app.keypresses:
-            self.app.colors["walls"] = 0xFFFF006E
+        if 65507 in self.app.keypresses:
+            self.app.colors["walls"] = 0xFFE93479
         else:
             self.app.colors["walls"] = random.randrange(0xFF000000, 0xFFFFFFFF)
 
