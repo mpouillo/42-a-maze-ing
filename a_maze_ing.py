@@ -51,6 +51,10 @@ def parse_config(config_file: str) -> None:
     output_path.parent.mkdir(parents=True, exist_ok=True)
     if output_path.is_dir():
         raise ValueError("Output file is a directory")
+    if str(output_path) == config_file:
+        raise ValueError(
+            f"Cannot write maze output to config file {config_file}"
+        )
 
 
 def get_config_file() -> str:
