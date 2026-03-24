@@ -59,7 +59,7 @@ install_mlx:
 	@if ! $(ENV_PYTHON) -c "import mlx" >/dev/null 2>&1; then \
 		echo "Installing mlx package..."; \
 		( \
-			wget -q https://cdn.intra.42.fr/document/document/46950/mlx_CLXV-2.2.tgz && \
+			wget -q https://cdn.intra.42.fr/document/document/47985/mlx_CLXV-2.2.tgz && \
 			tar -xf mlx_CLXV-2.2.tgz && \
 			cd mlx_CLXV && \
 			export PATH=$(ENV_DIR)/bin:$$PATH && \
