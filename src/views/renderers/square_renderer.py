@@ -16,7 +16,6 @@ class SquareRenderer(BaseRenderer):
 
         self.wall_size: int = 4
         self.compute_scales()
-        self.prev_gen: tuple[int, int] | None = None
 
         self.add_layer(
             "path", self.offset_x, self.offset_y, 1, self.maze_w, self.maze_h
@@ -117,8 +116,6 @@ class SquareRenderer(BaseRenderer):
         match cmd:
             case "remove":
                 maze_canvas: Any = self.layers.get("maze")
-                if self.prev_gen:
-                    self.draw_cell_center(maze_canvas, *self.prev_gen)
                 self.draw_cell_center(maze_canvas, x1, y1)
                 self.draw_cell_center(maze_canvas, x2, y2, step_color)
                 self.draw_cell_walls(maze_canvas, x1, y1, wall)
@@ -135,8 +132,6 @@ class SquareRenderer(BaseRenderer):
                 pass
             case _:
                 pass
-
-        self.prev_gen = (x2, y2)
 
     def draw_endpoints(self) -> None:
         """Draw entry and exit markers on the endpoints layer."""
