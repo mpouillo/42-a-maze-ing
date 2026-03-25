@@ -35,16 +35,16 @@ class Application:
         self.mouse_autorepeat: bool = False
 
         self.colors: dict[str, int] = {
-            "cell": 0xFFF9AC53,
-            "character": 0xFF00FFFF,
-            "entry": 0xFF00FF00,
-            "exit": 0xFFFF0000,
-            "path_1": 0xFF153CB4,
-            "path_2": 0xFF300350,
-            "walls": 0xFFE93479,
-            "step": 0xFFF62E97,
-            "bg_1": 0xFFF62E97,
-            "bg_2": 0xFF94167F,
+            "cell": 0xFF003f5c,
+            "character": 0xFFffe9c0,
+            "entry": 0xFF61ff69,
+            "exit": 0xFFff6361,
+            "path_1": 0xFFbc5090,
+            "path_2": 0xFF58508d,
+            "walls": 0xFFffd380,
+            "step": 0xFF7b71bf,
+            "bg_1": 0xFF7b71bf,
+            "bg_2": 0xFF63a7b0,
         }
 
         self.mlx: Any = Mlx()
@@ -144,6 +144,23 @@ class Application:
             logo_w: int = len(logo_data[0])
         else:
             raise ValueError("No logo data found")
+
+        for i, h in enumerate(logo_data):
+            val = 0
+            for _ in logo_data[i]:
+                if (
+                    val in [0, len(logo_data[0]) - 1]
+                    or h in [0, len(logo_data) - 1]
+                ):
+                    if logo_data[i][val] != "0":
+                        raise ValueError("Logo data must be surrounded with 0")
+                if logo_data[i][val] not in ["1", "0"]:
+                    raise ValueError("Invalid data in logo file (0 or 1 only)")
+                val += 1
+            if val != len(logo_data[0]):
+                raise ValueError("Invalid logo format (must be a rectangle)")
+
+        return logo_h, logo_w
 
         width_val: str | None = os.environ.get("WIDTH")
         if width_val in ["None", None]:

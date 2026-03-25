@@ -56,6 +56,8 @@ def parse_config(config_file: str) -> None:
             f"Cannot write maze output to config file {config_file}"
         )
 
+    Application.validate_config()
+
 
 def get_config_file() -> str:
     """Parse sys args for config filename, check access and return filename."""

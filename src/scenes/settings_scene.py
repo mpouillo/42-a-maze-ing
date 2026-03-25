@@ -147,29 +147,24 @@ class SettingsScene(BaseScene):
                 else:
                     os.environ["ENTRY"] = "None"
                 return
+
+            coords: str = ",".join(
+                [
+                    str(
+                        random.randrange(
+                            0, int(os.environ.get("HEIGHT", 0))
+                        )
+                    ),
+                    str(
+                        random.randrange(
+                            0, int(os.environ.get("WIDTH", 0))
+                        )
+                    ),
+                ]
+            )
+            os.environ["ENTRY"] = coords
         except Exception:
             pass
-        while True:
-            try:
-                coords: str = ",".join(
-                    [
-                        str(
-                            random.randrange(
-                                0, int(os.environ.get("HEIGHT", 0))
-                            )
-                        ),
-                        str(
-                            random.randrange(
-                                0, int(os.environ.get("WIDTH", 0))
-                            )
-                        ),
-                    ]
-                )
-                os.environ["ENTRY"] = coords
-                self.app.validate_config()
-                break
-            except ValueError:
-                continue
 
     def _cmd_update_exit(self) -> None:
         """Randomize EXIT, or reset it when Ctrl is held."""
@@ -181,29 +176,24 @@ class SettingsScene(BaseScene):
                 else:
                     os.environ["EXIT"] = "None"
                 return
+
+            coords: str = ",".join(
+                [
+                    str(
+                        random.randrange(
+                            0, int(os.environ.get("HEIGHT", 0))
+                        )
+                    ),
+                    str(
+                        random.randrange(
+                            0, int(os.environ.get("WIDTH", 0))
+                        )
+                    ),
+                ]
+            )
+            os.environ["EXIT"] = coords
         except Exception:
             pass
-        while True:
-            try:
-                coords: str = ",".join(
-                    [
-                        str(
-                            random.randrange(
-                                0, int(os.environ.get("HEIGHT", 0))
-                            )
-                        ),
-                        str(
-                            random.randrange(
-                                0, int(os.environ.get("WIDTH", 0))
-                            )
-                        ),
-                    ]
-                )
-                os.environ["EXIT"] = coords
-                self.app.validate_config()
-                break
-            except ValueError:
-                continue
 
     def _cmd_update_perfect(self) -> None:
         """Toggle PERFECT, or reset it when Ctrl is held."""

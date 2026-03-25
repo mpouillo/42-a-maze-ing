@@ -37,7 +37,7 @@ class BaseRenderer:
             "btn_bg": 0xFF333333,
             "btn_text": 0xFFFFFFFF,
             "btn_border": 0xFF555555,
-            "btn_hover": 0xFF94167F,
+            "btn_hover": 0xFFffa600,
             "btn_disabled": 0xFF404040,
             "btn_text": 0xFFFFFFFF,
             "btn_text_disabled": 0xFF7F7F7F,
