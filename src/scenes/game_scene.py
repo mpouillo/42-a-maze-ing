@@ -132,7 +132,7 @@ class GameScene(BaseScene):
             text_y - 30,
             text_w + 80,
             text_h + 80,
-            self.app.colors.get("bg_2"),
+            self.app.colors.get("character"),
         )
         # Box foreground
         canvas.fill_rect(
@@ -140,11 +140,12 @@ class GameScene(BaseScene):
             text_y - 40,
             text_w + 80,
             text_h + 80,
-            self.app.colors.get("bg_1"),
+            self.app.colors.get("cell"),
         )
         # Text
         self.view.draw_text(
-            canvas, text_x, text_y, text, 0xFFFFFFFF, font_scale
+            canvas, text_x, text_y, text,
+            self.app.colors.get("character"), font_scale
         )
 
         self.view.refresh_layers()

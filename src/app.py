@@ -132,9 +132,8 @@ class Application:
 
         try:
             with open("src/models/maze/logo", "r") as f:
-                logo_data = [
-                    line for line in f.read().splitlines() if line.strip()
-                ]
+                logo_data = [line.strip() for line in f.read().splitlines()
+                             if line.strip()]
         except Exception:
             raise ValueError(
                 "Error reading logo data. Do you have permissions?"
@@ -145,22 +144,18 @@ class Application:
         else:
             raise ValueError("No logo data found")
 
-        for i, h in enumerate(logo_data):
-            val = 0
-            for _ in logo_data[i]:
-                if (
-                    val in [0, len(logo_data[0]) - 1]
-                    or h in [0, len(logo_data) - 1]
-                ):
-                    if logo_data[i][val] != "0":
-                        raise ValueError("Logo data must be surrounded with 0")
-                if logo_data[i][val] not in ["1", "0"]:
-                    raise ValueError("Invalid data in logo file (0 or 1 only)")
-                val += 1
-            if val != len(logo_data[0]):
+        for x, row in enumerate(logo_data):
+            if len(row) != len(logo_data[0]):
                 raise ValueError("Invalid logo format (must be a rectangle)")
-
-        return logo_h, logo_w
+            for y, val in enumerate(row):
+                if (
+                    y in [0, len(row) - 1]
+                    or x in [0, len(logo_data) - 1]
+                ):
+                    if val != "0":
+                        raise ValueError("Logo data must be surrounded with 0")
+                if val not in ["1", "0"]:
+                    raise ValueError("Invalid data in logo file (0 or 1 only)")
 
         width_val: str | None = os.environ.get("WIDTH")
         if width_val in ["None", None]:
